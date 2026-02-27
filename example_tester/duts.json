@@ -1,0 +1,134 @@
+{
+    "duts": [
+        {
+            "name": "Example DUT",
+            "description": "Just a DUT for Testing the Framework",
+            "image": "./assets/example.png",
+            "product_id": "xxxxxxx",
+            "module": "tests.GenericTests",
+            "setup": "DutSetupTest",
+            "cleanup": "DutCleanupTest",
+            "programs": [
+                {
+                    "name": "Sanity",
+                    "description": "Quick Sanity Check",
+                    "attr_schema": {
+                        "type": "object",
+                        "properties": {
+                            "fw_version": {
+                                "type": "string",
+                                "description": "Firmware Version to be Tested"
+                            },
+                            "official_release": {
+                                "type": "boolean",
+                                "description": "Version is a release"
+                            }
+                        }
+                    },
+                    "attr": {
+                        "fw_version": "1.1.1.1",
+                        "official_release": true
+                    },
+                    "testsuites": [
+                        "Versions",
+                        {
+                            "testsuite": "Versions",
+                            "name": "Versions With Comment",
+                            "attr": {
+                                "comment": "This is a comment"
+                            }
+                        },
+                        "Examples"
+                    ]
+                }
+            ],
+            "testsuites": [
+                {
+                    "name": "Versions",
+                    "module": "tests.GenericTests",
+                    "setup": "SetupTest",
+                    "cleanup": "CleanupTest",
+                    "testcases": [
+                        {
+                            "name": "Node Firmware Version",
+                            "module": "tests.VersionTests",
+                            "test": "NodeVersionsTest",
+                            "tolerance": {
+                                "expected": "1.2.0.0"
+                            },
+                            "attr": {
+                                "ver_type": "fw"
+                            }
+                        },
+                        {
+                            "name": "Node Hardware Version",
+                            "module": "tests.VersionTests",
+                            "test": "NodeVersionsTest",
+                            "tolerance": {
+                                "expected": "1"
+                            },
+                            "attr": {
+                                "ver_type": "hw"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Examples",
+                    "module": "tests.GenericTests",
+                    "setup": "SetupTest",
+                    "cleanup": "CleanupTest",
+                    "testcases": [
+                        {
+                            "name": "String Example",
+                            "module": "tests.ExampleTests",
+                            "test": "StringExampleTest",
+                            "tolerance": {
+                                "expected": "Hello, World!"
+                            }
+                        },
+                        {
+                            "name": "Numeric Example",
+                            "module": "tests.ExampleTests",
+                            "test": "NumericExampleTest",
+                            "tolerance": {
+                                "min": 1.0,
+                                "max": 2.0
+                            }
+                        },
+                        {
+                            "name": "Bool Example",
+                            "module": "tests.ExampleTests",
+                            "test": "BoolExampleTest",
+                            "tolerance": {
+                                "expected": true
+                            }
+                        },
+                        {
+                            "name": "Numeric 2d Example",
+                            "module": "tests.ExampleTests",
+                            "test": "Numeric2dExampleTest",
+                            "unit": "Voltage[V]",
+                            "x_unit": "Time[sec]",
+                            "tolerance": {
+                                "min": -1.0,
+                                "max": 1.0
+                            }
+                        },
+                        {
+                            "name": "Numeric 2d Example 2",
+                            "module": "tests.ExampleTests",
+                            "test": "Numeric2dExampleTest2",
+                            "unit": "Voltage[V]",
+                            "x_unit": "Time[sec]",
+                            "tolerance": {
+                                "min": -1.0,
+                                "max": 1.0
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

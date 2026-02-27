@@ -1,0 +1,5 @@
+from .NumericTestResult import NumericTestResult
+from .BoolTestResult import BoolTestResult
+from .StringTestResult import StringTestResult
+from .PassFailTestResult import PassFailTestResult
+from .Numeric2dTestResult import Numeric2dTestResult

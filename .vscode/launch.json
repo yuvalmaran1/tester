@@ -1,0 +1,139 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Backend (Example Tester)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/example_tester/example_tester.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/example_tester",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": [],
+            "justMyCode": false,
+            "stopOnEntry": false,
+            "python": "${workspaceFolder}/venv/bin/python"
+        },
+        {
+            "name": "Debug Backend (No UI)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/example_tester/example_tester.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/example_tester",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": [],
+            "justMyCode": false,
+            "stopOnEntry": false,
+            "python": "${workspaceFolder}/venv/bin/python"
+        },
+        {
+            "name": "Debug Frontend (Next.js Dev)",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/tester-frontend/node_modules/.bin/next",
+            "args": [
+                "dev"
+            ],
+            "cwd": "${workspaceFolder}/tester-frontend",
+            "console": "integratedTerminal",
+            "env": {
+                "NODE_ENV": "development"
+            },
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        },
+        {
+            "name": "Debug Frontend (Next.js Build)",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/tester-frontend/node_modules/.bin/next",
+            "args": [
+                "build"
+            ],
+            "cwd": "${workspaceFolder}/tester-frontend",
+            "console": "integratedTerminal",
+            "env": {
+                "NODE_ENV": "production"
+            },
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        },
+        {
+            "name": "Debug Frontend (Next.js Start)",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/tester-frontend/node_modules/.bin/next",
+            "args": [
+                "start"
+            ],
+            "cwd": "${workspaceFolder}/tester-frontend",
+            "console": "integratedTerminal",
+            "env": {
+                "NODE_ENV": "production"
+            },
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        },
+        {
+            "name": "Attach to Backend Process",
+            "type": "debugpy",
+            "request": "attach",
+            "port": 5678,
+            "host": "localhost",
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}",
+                    "remoteRoot": "."
+                }
+            ],
+            "justMyCode": false
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Debug Full Stack",
+            "configurations": [
+                "Debug Backend (Example Tester)",
+                "Debug Frontend (Next.js Dev)"
+            ],
+            "stopAll": true,
+            "presentation": {
+                "hidden": false,
+                "group": "Full Stack",
+                "order": 1
+            }
+        },
+        {
+            "name": "Debug Backend Only",
+            "configurations": [
+                "Debug Backend (Example Tester)"
+            ],
+            "stopAll": true,
+            "presentation": {
+                "hidden": false,
+                "group": "Backend",
+                "order": 2
+            }
+        },
+        {
+            "name": "Debug Frontend Only",
+            "configurations": [
+                "Debug Frontend (Next.js Dev)"
+            ],
+            "stopAll": true,
+            "presentation": {
+                "hidden": false,
+                "group": "Frontend",
+                "order": 3
+            }
+        }
+    ]
+}
