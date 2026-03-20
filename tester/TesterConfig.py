@@ -11,6 +11,7 @@ class TesterConfig:
     name: str = field(default='Tester')
     description: str = field(default='Tester description')
     version: str = field(default='0.0.0')
+    debug_reload: bool = field(default=False)
 
     # Backward compatibility property
     @property

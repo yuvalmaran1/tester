@@ -20,7 +20,7 @@ class Dut:
         self.cleanup: TestCase = None
 
     @staticmethod
-    def from_dict(d: dict, assets: dict = {}):
+    def from_dict(d: dict, assets: dict = {}, debug_reload: bool = False):
         dut = Dut()
         dut.name = d.get("name", dut.name)
         dut.description = d.get("description", dut.description)
@@ -31,7 +31,8 @@ class Dut:
 
         if d.get('module', None) is not None:
             mod = import_module(d.get('module'))
-            mod = reload(mod)
+            if debug_reload:
+                mod = reload(mod)
             setup_name = d.get('setup', None)
             if setup_name:
                 setup_test = getattr(mod, setup_name)
@@ -58,7 +59,7 @@ class Dut:
             else:
                 ts_obj = t
             ts_obj['attr'] = ts_obj.get('attr',{}) | dut.attr
-            ts = TestSuite.from_dict(ts_obj, assets)
+            ts = TestSuite.from_dict(ts_obj, assets, debug_reload=debug_reload)
             dut.test_suites.append(ts)
 
         programs = d.get("programs", [])

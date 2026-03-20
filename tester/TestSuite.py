@@ -17,13 +17,14 @@ class TestSuite:
         self.testcases.append(test)
 
     @staticmethod
-    def from_dict(d, assets: dict):
+    def from_dict(d, assets: dict, debug_reload: bool = False):
         s = TestSuite()
         s.name = d.get('name', s.name)
         s.attr = d.get('attr', {})
 
         mod = import_module(d.get('module'))
-        mod = reload(mod)
+        if debug_reload:
+            mod = reload(mod)
 
         setup_name = d.get('setup', None)
         if setup_name:
@@ -43,7 +44,8 @@ class TestSuite:
 
         for tc_d in d.get('testcases', []):
             tc_mod = import_module(tc_d.get('module',d.get('module')))
-            tc_mod = reload(tc_mod)
+            if debug_reload:
+                tc_mod = reload(tc_mod)
             tc = getattr(tc_mod, tc_d.get('test'))
             tc_cfg = TestConfig.from_dict(tc_d)
             tc_cfg.attr = s.attr | tc_cfg.attr
