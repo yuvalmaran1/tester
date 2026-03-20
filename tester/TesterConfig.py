@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
+from typing import Optional, Type
 import pathlib
+
 
 @dataclass
 class TesterConfig:
@@ -11,6 +13,9 @@ class TesterConfig:
     name: str = field(default='Tester')
     description: str = field(default='Tester description')
     version: str = field(default='0.0.0')
+    # Per-station hardware configuration (replaces setup_file for typed configs)
+    station_config_file: Optional[str] = field(default=None)
+    station_config_class: Optional[Type] = field(default=None)
 
     # Backward compatibility property
     @property
