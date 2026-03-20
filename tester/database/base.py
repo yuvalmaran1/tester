@@ -113,9 +113,9 @@ class DatabaseInterface(ABC):
             filters.append('res.date <= ' + param_placeholder)
             params.append(query_params['end_date'] + ' 23:59:59')
 
-        # Always exclude setup and cleanup tests
-        filters.append('res.name NOT LIKE ' + param_placeholder + ' AND res.name NOT LIKE ' + param_placeholder)
-        params.extend(['%setup%', '%cleanup%'])
+        # Always exclude setup and cleanup tests (identified by explicit role column)
+        filters.append('res.role = ' + param_placeholder)
+        params.append('testcase')
 
         return filters, params
 
