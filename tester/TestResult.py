@@ -32,7 +32,7 @@ class TestResult(ABC):
         self.attr = config.attr
         self.plot_data = {}
         self.result: TestResult.TestEval = TestResult.TestEval.UNKNOWN
-        if self.value:
+        if self.value is not None:
             self.evaluate()
 
     def to_dict(self) -> dict:
