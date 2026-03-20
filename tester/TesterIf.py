@@ -84,7 +84,7 @@ class TesterIf:
         self.register_request(TesterRequest.Reload.value, self._reload_handler)
         self.register_request(TesterRequest.Attr.value, self._attr_handler)
         self.register_request(TesterRequest.TestExecuteState.value, self._test_execute_state_handler)
-        self.register_request(TesterRequest.DialogResponse.value, self._dialog_reponse_handler)
+        self.register_request(TesterRequest.DialogResponse.value, self._dialog_response_handler)
         self._add_endpoints()
         log_handler = SocketLogHandler(self)
         log_handler.setFormatter(TestLogger._fmt)
@@ -280,7 +280,7 @@ class TesterIf:
         if self.test_execute_state_handler:
             self.test_execute_state_handler(data)
 
-    def _dialog_reponse_handler(self, response, data):
+    def _dialog_response_handler(self, response, data):
         if self.dialog_response_handler:
             self.dialog_response_handler(response, data)
 

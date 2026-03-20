@@ -5,12 +5,12 @@ from ..TestResult import TestResult
 
 class BoolTestCase(TestCase, ABC):
     __metaclass__ = ABCMeta
-    
+
     def result_class(self):
         return BoolTestResult
-        
-class BoolTestResult(TestResult, ABC):
-    result_type = "bool"   
+
+class BoolTestResult(TestResult):
+    result_type = "bool"
 
     def _evaluate(self) -> TestResult.TestEval:
         expected = self.tolerance.get('expected', True)
