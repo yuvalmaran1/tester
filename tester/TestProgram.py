@@ -81,19 +81,19 @@ class TestProgram:
                     tc.result.suite = final_name
 
                 # Merge program attr, testsuite attr, and new ts_attr
-                # Lower hierarchy should prevail: ts_attr (most specific) > ts.attr > p.attr (least specific)
-                ts.attr = ts_attr | ts.attr | p.attr
+                # Most specific wins (rightmost in |): ts_attr > ts.attr > p.attr
+                ts.attr = p.attr | ts.attr | ts_attr
 
                 if ts.setup:
-                    # Preserve testcase-specific attr (most specific), then ts_attr, then ts.attr, then p.attr
-                    ts.setup.config.attr = ts_attr | ts.attr | p.attr | ts.setup.config.attr
+                    # Program context wins: ts_attr > p.attr > ts.attr > setup defaults
+                    ts.setup.config.attr = ts.setup.config.attr | ts.attr | p.attr | ts_attr
 
                 if ts.cleanup:
-                    # Preserve testcase-specific attr (most specific), then ts_attr, then ts.attr, then p.attr
-                    ts.cleanup.config.attr = ts_attr | ts.attr | p.attr | ts.cleanup.config.attr
+                    # Program context wins: ts_attr > p.attr > ts.attr > cleanup defaults
+                    ts.cleanup.config.attr = ts.cleanup.config.attr | ts.attr | p.attr | ts_attr
 
                 for tc in ts.testcases:
-                    # Preserve testcase-specific attr (most specific), then ts_attr, then ts.attr, then p.attr
-                    tc.config.attr = ts_attr | ts.attr | p.attr | tc.config.attr
+                    # Program context wins: ts_attr > p.attr > ts.attr > testcase defaults
+                    tc.config.attr = tc.config.attr | ts.attr | p.attr | ts_attr
                 p.testsuites.append(ts)
         return p
