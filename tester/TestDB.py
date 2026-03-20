@@ -74,7 +74,6 @@ class TestDB:
 
     def get_latest_run_id(self) -> int:
         """Get the latest run ID from the database."""
-        # This is a simple implementation - in production you might want to optimize this
         runs_json = self.get_runs()
         try:
             runs = json.loads(runs_json)
@@ -83,9 +82,3 @@ class TestDB:
         if not runs:
             return 0
         return max(run['run_id'] for run in runs)
-
-    def update_run_start(self, run: TestRun) -> None:
-        """Update the start time of a test run."""
-        # For now, we'll update the entire run record
-        # In a more sophisticated implementation, you might want to add a specific method
-        self.update_run_end(run)

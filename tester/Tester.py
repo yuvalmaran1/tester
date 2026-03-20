@@ -278,7 +278,6 @@ class Tester(ABC):
         self.test_run.start()
         run_id = self.db.append_run(self.test_run)
         self.test_run.run_id = run_id
-        self.db.update_run_start(self.test_run)
         self._update_run()
         skip_all = False
 
