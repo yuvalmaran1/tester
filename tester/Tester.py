@@ -162,7 +162,7 @@ class Tester(ABC):
         self.select_program(program_name=program_name)
 
     def _execute_testsuite(self, ts: TestSuite, run_id, skip_suite:bool=False):
-        skip_tastcases = False
+        skip_testcases = False
         self._update_status(f"Executing Test Suite '{ts.name}'")
         if ts.setup:
             self._update_status(f"Executing Test Case '{ts.setup.config.name}'")
@@ -179,7 +179,7 @@ class Tester(ABC):
                             ts.setup.result.comment = "Skipped by user"
             else:
                 ts.setup.execute()
-                skip_tastcases = ts.setup.result.result != TestResult.TestEval.PASS
+                skip_testcases = ts.setup.result.result != TestResult.TestEval.PASS
             self.db.append_result(ts.setup.result, run_id)
             self._update_run(self.active_test)
             self.__test_done(ts.setup.result.result)
@@ -188,8 +188,8 @@ class Tester(ABC):
 
         for tc in ts.testcases:
             if self.abort_run:
-                skip_tastcases = True
-            if skip_tastcases or skip_suite or tc.config.skip:
+                skip_testcases = True
+            if skip_testcases or skip_suite or tc.config.skip:
                 self._update_status(f"Skipping Test Case '{tc.config.name}'")
                 tc.skip()
                 # Add comment if skipped due to user modification
