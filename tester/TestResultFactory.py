@@ -22,7 +22,7 @@ class TestResultFactory:
         self.tr_dict = TestResultFactory.TR_DICT
 
     def add(self, result_class: TestResult):
-        self.tr_dict.update({result_class.classname: result_class})
+        self.tr_dict.update({result_class.result_type: result_class})
 
     def from_dict(self, d):
         try:
