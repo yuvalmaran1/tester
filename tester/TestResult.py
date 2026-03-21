@@ -31,6 +31,7 @@ class TestResult(ABC):
         self.x_unit = config.x_unit
         self.attr = config.attr
         self.plot_data = {}
+        self.role: str = "testcase"
         self.result: TestResult.TestEval = TestResult.TestEval.UNKNOWN
         if self.value is not None:
             self.evaluate()

@@ -16,6 +16,7 @@ class TesterConfig:
     # Per-station hardware configuration (replaces setup_file for typed configs)
     station_config_file: Optional[str] = field(default=None)
     station_config_class: Optional[Type] = field(default=None)
+    debug_reload: bool = field(default=False)
 
     # Backward compatibility property
     @property

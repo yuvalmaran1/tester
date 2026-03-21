@@ -16,8 +16,8 @@ class PostgreSQLDatabase(DatabaseInterface):
     RUNS_COLS = "tester, tester_ver, dut, dut_desc, dut_product_id, dut_image, program, program_desc, start_date, end_date, result, log, attachment, program_modified, program_attr"
     RUNS_REPORT_COLS = "run_id, dut, program, start_date, end_date, result"
     RESULT_TABLE = "results"
-    RESULT_COLS_DEF = "result_id SERIAL PRIMARY KEY, run_id INTEGER, date TEXT, suite TEXT, name TEXT, tolerance TEXT, value TEXT, unit TEXT, result TEXT, comment TEXT, infoonly INTEGER, skip INTEGER, attr TEXT, result_type TEXT"
-    RESULT_COLS = "run_id, date, suite, name, tolerance, value, unit, result, comment, infoonly, skip, attr, result_type"
+    RESULT_COLS_DEF = "result_id SERIAL PRIMARY KEY, run_id INTEGER, date TEXT, suite TEXT, name TEXT, tolerance TEXT, value TEXT, unit TEXT, result TEXT, comment TEXT, infoonly INTEGER, skip INTEGER, attr TEXT, result_type TEXT, role TEXT"
+    RESULT_COLS = "run_id, date, suite, name, tolerance, value, unit, result, comment, infoonly, skip, attr, result_type, role"
 
     def __init__(self, config_string: str):
         """Initialize PostgreSQL database connection.
@@ -105,6 +105,16 @@ class PostgreSQLDatabase(DatabaseInterface):
                     cursor.execute(f'ALTER TABLE {self.RUNS_TABLE} ADD COLUMN program_attr TEXT')
                     print("Added program_attr column to existing PostgreSQL database")
 
+                # Check if role column exists in results table, add it if not (migration)
+                cursor.execute(f"""
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_name = '{self.RESULT_TABLE}' AND column_name = 'role'
+                """)
+                if not cursor.fetchone():
+                    cursor.execute(f"ALTER TABLE {self.RESULT_TABLE} ADD COLUMN role TEXT DEFAULT 'testcase'")
+                    print("Added role column to existing PostgreSQL database")
+
                 conn.commit()
         finally:
             self._return_connection(conn)
@@ -144,8 +154,9 @@ class PostgreSQLDatabase(DatabaseInterface):
             with conn.cursor() as cursor:
                 entities = (run_id, result.date, result.suite, result.name, json.dumps(result.tolerance),
                            str(result.value), result.unit, str(result.result), result.comment,
-                           result.infoonly, result.skip, str(result.attr), result.result_type)
-                cursor.execute(f'INSERT INTO {self.RESULT_TABLE}({self.RESULT_COLS}) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', entities)
+                           result.infoonly, result.skip, str(result.attr), result.result_type,
+                           getattr(result, 'role', 'testcase'))
+                cursor.execute(f'INSERT INTO {self.RESULT_TABLE}({self.RESULT_COLS}) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', entities)
                 conn.commit()
         finally:
             self._return_connection(conn)
@@ -210,7 +221,7 @@ class PostgreSQLDatabase(DatabaseInterface):
             with conn.cursor() as cursor:
                 cursor.execute(f'''
                     SELECT DISTINCT name FROM {self.RESULT_TABLE}
-                    WHERE name NOT ILIKE '%setup%' AND name NOT ILIKE '%cleanup%'
+                    WHERE role = 'testcase'
                     ORDER BY name
                 ''')
                 tests = cursor.fetchall()

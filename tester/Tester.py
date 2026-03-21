@@ -5,7 +5,6 @@ from importlib.metadata import version
 import pyjson5 as json
 import os
 import ctypes
-from contextlib import suppress
 from threading import Thread
 from datetime import datetime, timedelta
 from abc import ABC, abstractmethod, ABCMeta
@@ -103,7 +102,7 @@ class Tester(ABC):
     def populate_duts(self, d):
         dut_list = []
         for dut in d['duts']:
-            dut_list.append(Dut.from_dict(dut, self.assets))
+            dut_list.append(Dut.from_dict(dut, self.assets, debug_reload=self.config.debug_reload))
         return dut_list
 
     def __reset_stats(self, total=0):
@@ -189,8 +188,9 @@ class Tester(ABC):
             else:
                 ts.setup.execute()
                 skip_testcases = ts.setup.result.result != TestResult.TestEval.PASS
+            ts.setup.result.role = "setup"
             self.db.append_result(ts.setup.result, run_id)
-            self._update_run(self.active_test)
+            self._update_run()
             self.__test_done(ts.setup.result.result)
             self.active_test += 1
             self.logger.info(f"Test '{ts.setup.config.name}' complete. Result: {ts.setup.result.result.name}")
@@ -214,7 +214,7 @@ class Tester(ABC):
                 self._update_status(f"Executing Test Case '{tc.config.name}'")
                 tc.execute()
             self.db.append_result(tc.result, run_id)
-            self._update_run(self.active_test)
+            self._update_run()
             self.__test_done(tc.result.result)
             self.active_test += 1
             self.logger.info(f"Test '{tc.config.name}' complete. Result: {tc.result.result.name}")
@@ -234,8 +234,9 @@ class Tester(ABC):
                             ts.cleanup.result.comment = "Skipped by user"
             else:
                 ts.cleanup.execute()
+            ts.cleanup.result.role = "cleanup"
             self.db.append_result(ts.cleanup.result, run_id)
-            self._update_run(self.active_test)
+            self._update_run()
             self.__test_done(ts.cleanup.result.result)
             self.active_test += 1
             self.logger.info(f"Test '{ts.cleanup.config.name}' complete. Result: {ts.cleanup.result.result.name}")
@@ -277,7 +278,7 @@ class Tester(ABC):
         self.interface.emit_event(TesterRequest.LogClear.value)
         self.select_program(self.active_program.name, reset_attr=False)
         self._timer_update()
-        TestLogger.start_run(self.test_run.log)
+        self.logger.start_run(self.test_run.log)
         self.state['log'] = self.test_run.log
         self.attachment.set_run(self.test_run)
 
@@ -297,8 +298,9 @@ class Tester(ABC):
             self._update_status(f"Executing Test Case '{self.dut_setup.config.name}'")
             self.dut_setup.execute()
             skip_all = self.dut_setup.result.result != TestResult.TestEval.PASS
+            self.dut_setup.result.role = "setup"
             self.db.append_result(self.dut_setup.result, run_id)
-            self._update_run(self.active_test)
+            self._update_run()
             self.__test_done(self.dut_setup.result.result)
             self.active_test += 1
             self.logger.info(f"Test '{self.dut_setup.config.name}' complete. Result: {self.dut_setup.result.result.name}")
@@ -312,8 +314,9 @@ class Tester(ABC):
             self._update_status(f"Executing Test Case '{self.dut_cleanup.config.name}'")
             self.dut_cleanup.execute()
             skip_all = self.dut_cleanup.result.result != TestResult.TestEval.PASS
+            self.dut_cleanup.result.role = "cleanup"
             self.db.append_result(self.dut_cleanup.result, run_id)
-            self._update_run(self.active_test)
+            self._update_run()
             self.__test_done(self.dut_cleanup.result.result)
             self.active_test += 1
             self.logger.info(f"Test '{self.dut_cleanup.config.name}' complete. Result: {self.dut_cleanup.result.result.name}")
@@ -329,7 +332,7 @@ class Tester(ABC):
         self.active_test = -1
         self._update_tester()
         self.logger.info(f"Program '{self.active_program.name}' done. RunID: {run_id}. Result: {self.test_run.result.name}")
-        TestLogger.stop_run()
+        self.logger.stop_run()
         self.db.update_run_end(self.test_run)
         self.attachment.set_run(None)
 
@@ -653,26 +656,16 @@ class Tester(ABC):
             if emit:
                 self.interface.emit_event(TesterRequest.ActiveProgram.value, self.state['program'])
 
-    def _update_run(self, idx=None, emit=True):
+    def _update_run(self, emit=True):
         if self.test_run:
-            if False and (idx is not None):
-                self.state['run'][idx] = self.test_run.test_results[idx].to_dict()
-                t = self.state['run'][idx]
+            self.state['run'] = [t.to_dict() for t in self.test_run.test_results]
+            for t in self.state['run']:
                 if t['Result'] != 'UNKNOWN' and self.test_run.start_date:
                     t['Time'] = str(timedelta(seconds=(t['Time']-self.test_run.start_date).seconds))
                 else:
                     t['Time'] = str(timedelta(seconds=0))
-                if emit:
-                    self.interface.emit_event(TesterRequest.RunItem.value, {"idx": idx, "item": self.state['run'][idx]})
-            else:
-                self.state['run'] = [t.to_dict() for t in self.test_run.test_results]
-                for t in self.state['run']:
-                    if t['Result'] != 'UNKNOWN' and self.test_run.start_date:
-                        t['Time'] = str(timedelta(seconds=(t['Time']-self.test_run.start_date).seconds))
-                    else:
-                        t['Time'] = str(timedelta(seconds=0))
-                if emit:
-                    self.interface.emit_event(TesterRequest.RunState.value, self.state['run'])
+            if emit:
+                self.interface.emit_event(TesterRequest.RunState.value, self.state['run'])
         else:
             self.state['run'] = []
             if emit:

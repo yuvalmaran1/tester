@@ -4,47 +4,53 @@ import datetime
 from .Singleton import Singleton
 
 class TestLogger(metaclass=Singleton):
-    _logger = None
     _fmt = logging.Formatter('[%(asctime)s.%(msecs)03d] - %(module)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-    _dirname = './logs'
-    _filename = None
 
-    def __new__(cls, *args, **kwargs):
-        if cls._logger is None:
-            name = kwargs.get("name", 'TestLogger')
-            cls._dirname = kwargs.get("dirname", './logs')
+    def __init__(self, name: str = 'TestLogger', dirname: str = './logs'):
+        # __init__ is called every time, but Singleton.__call__ returns the existing
+        # instance after the first construction, so only the first call matters.
+        if hasattr(self, '_initialized'):
+            return
+        self._initialized = True
+        self._dirname = dirname
+        self._logger = logging.Logger(name)
+        self._logger.setLevel(logging.DEBUG)
+        sh = logging.StreamHandler(sys.stdout)
+        sh.setFormatter(self._fmt)
+        self._logger.addHandler(sh)
 
-            cls._logger = logging.Logger(name)
-            cls._logger.setLevel(logging.DEBUG)
-            
-            sh = logging.StreamHandler(sys.stdout)
-            sh.setFormatter(cls._fmt)
-            cls._logger.addHandler(sh)
+    # Proxy methods so callers can use logger.info(...) etc. directly
+    def debug(self, msg, *args, **kwargs):
+        self._logger.debug(msg, *args, **kwargs)
 
-        return cls._logger
-    
-    @classmethod
-    def start_run(cls, entrylist: list):
-        # generate file name
+    def info(self, msg, *args, **kwargs):
+        self._logger.info(msg, *args, **kwargs)
+
+    def warning(self, msg, *args, **kwargs):
+        self._logger.warning(msg, *args, **kwargs)
+
+    def error(self, msg, *args, **kwargs):
+        self._logger.error(msg, *args, **kwargs)
+
+    def critical(self, msg, *args, **kwargs):
+        self._logger.critical(msg, *args, **kwargs)
+
+    def start_run(self, entrylist: list):
         now = datetime.datetime.now()
-
-        # add file handler if dirname is not None
-        if cls._dirname:
-            cls._filename = f"{cls._dirname}/log_{now.strftime('%Y_%m_%d_%H_%M_%S')}.log"
-            fh = logging.FileHandler(cls._filename)
-            fh.setFormatter(cls._fmt)
-            cls._logger.addHandler(fh)
-
-        # add list handler
+        if self._dirname:
+            filename = f"{self._dirname}/log_{now.strftime('%Y_%m_%d_%H_%M_%S')}.log"
+            fh = logging.FileHandler(filename)
+            fh.setFormatter(self._fmt)
+            self._logger.addHandler(fh)
         lh = LogListHandler(entrylist)
-        lh.setFormatter(cls._fmt)
-        cls._logger.addHandler(lh)
-    
-    @classmethod
-    def stop_run(cls):
-        fh = list(filter(lambda h: isinstance(h, logging.FileHandler) or isinstance(h, LogListHandler), cls._logger.handlers))
-        for h in fh:
-            cls._logger.removeHandler(h)
+        lh.setFormatter(self._fmt)
+        self._logger.addHandler(lh)
+
+    def stop_run(self):
+        to_remove = [h for h in self._logger.handlers
+                     if isinstance(h, (logging.FileHandler, LogListHandler))]
+        for h in to_remove:
+            self._logger.removeHandler(h)
 
 class LogListHandler(logging.StreamHandler):
     def __init__(self, entrylist: list):
