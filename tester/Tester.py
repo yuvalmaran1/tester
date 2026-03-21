@@ -179,6 +179,7 @@ class Tester(ABC):
             else:
                 ts.setup.execute()
                 skip_testcases = ts.setup.result.result != TestResult.TestEval.PASS
+            ts.setup.result.role = "setup"
             self.db.append_result(ts.setup.result, run_id)
             self._update_run()
             self.__test_done(ts.setup.result.result)
@@ -224,6 +225,7 @@ class Tester(ABC):
                             ts.cleanup.result.comment = "Skipped by user"
             else:
                 ts.cleanup.execute()
+            ts.cleanup.result.role = "cleanup"
             self.db.append_result(ts.cleanup.result, run_id)
             self._update_run()
             self.__test_done(ts.cleanup.result.result)
@@ -287,6 +289,7 @@ class Tester(ABC):
             self._update_status(f"Executing Test Case '{self.dut_setup.config.name}'")
             self.dut_setup.execute()
             skip_all = self.dut_setup.result.result != TestResult.TestEval.PASS
+            self.dut_setup.result.role = "setup"
             self.db.append_result(self.dut_setup.result, run_id)
             self._update_run()
             self.__test_done(self.dut_setup.result.result)
@@ -302,6 +305,7 @@ class Tester(ABC):
             self._update_status(f"Executing Test Case '{self.dut_cleanup.config.name}'")
             self.dut_cleanup.execute()
             skip_all = self.dut_cleanup.result.result != TestResult.TestEval.PASS
+            self.dut_cleanup.result.role = "cleanup"
             self.db.append_result(self.dut_cleanup.result, run_id)
             self._update_run()
             self.__test_done(self.dut_cleanup.result.result)
