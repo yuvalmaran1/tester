@@ -1,0 +1,65 @@
+"""Fast test case implementations for use in integration tests.
+
+All test cases here complete instantly (no sleep) so that the test suite
+runs quickly.  They are referenced by name in duts.json fixtures written
+by conftest.py.
+"""
+import time
+
+from tester.TestResult import TestResult
+from tester.TestConfig import TestConfig
+from tester.TestResults.PassFailTestResult import PassFailTestCase
+from tester.TestResults.StringTestResult import StringTestCase
+
+
+class FastPassTest(PassFailTestCase):
+    """Immediately returns PASS."""
+    def _execute(self, config: TestConfig, assets: dict) -> TestResult.TestEval:
+        return TestResult.TestEval.PASS
+
+
+class FastFailTest(PassFailTestCase):
+    """Immediately returns FAIL."""
+    def _execute(self, config: TestConfig, assets: dict) -> TestResult.TestEval:
+        return TestResult.TestEval.FAIL
+
+
+class FastErrorTest(PassFailTestCase):
+    """Raises an exception so the framework records ERROR."""
+    def _execute(self, config: TestConfig, assets: dict) -> TestResult.TestEval:
+        raise RuntimeError("deliberate test error")
+
+
+class FastSetupTest(PassFailTestCase):
+    """Generic setup that always passes."""
+    def _execute(self, config: TestConfig, assets: dict) -> TestResult.TestEval:
+        return TestResult.TestEval.PASS
+
+
+class FastCleanupTest(PassFailTestCase):
+    """Generic cleanup that always passes."""
+    def _execute(self, config: TestConfig, assets: dict) -> TestResult.TestEval:
+        return TestResult.TestEval.PASS
+
+
+class FastSetupFailTest(PassFailTestCase):
+    """Setup that always fails — used to test cascade-skip behavior."""
+    def _execute(self, config: TestConfig, assets: dict) -> TestResult.TestEval:
+        return TestResult.TestEval.FAIL
+
+
+class AttrReadTest(StringTestCase):
+    """Returns the value of config.attr['read_key'] so attr-hierarchy tests can
+    verify the correct value flowed through the merge chain."""
+    def _execute(self, config: TestConfig, assets: dict) -> str:
+        return str(config.attr.get('read_key', 'missing'))
+
+
+class SlowTest(PassFailTestCase):
+    """Sleeps long enough that an abort signal can be delivered before the test
+    finishes, but short enough that the test suite does not take forever if
+    _ctype_async_raise does not interrupt time.sleep (Windows/Python 3.13).
+    Used exclusively in abort-run tests."""
+    def _execute(self, config: TestConfig, assets: dict) -> TestResult.TestEval:
+        time.sleep(1)
+        return TestResult.TestEval.PASS

@@ -174,7 +174,7 @@ class SQLiteDatabase(DatabaseInterface):
 
             # Build the query - join results with runs to get DUT and program info
             query = f'''
-                SELECT res.run_id, res.date, res.suite, res.name, res.tolerance, res.value, res.unit, res.result, res.comment, res.infoonly, res.skip, res.attr, res.result_type, r.dut, r.program
+                SELECT res.run_id, res.date, res.suite, res.name, res.tolerance, res.value, res.unit, res.result, res.comment, res.infoonly, res.skip, res.attr, res.result_type, res.role, r.dut, r.program
                 FROM {self.RESULT_TABLE} res
                 JOIN {self.RUNS_TABLE} r ON res.run_id = r.run_id
                 WHERE 1=1
