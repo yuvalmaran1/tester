@@ -269,7 +269,7 @@ class Tester(ABC):
         self.interface.emit_event(TesterRequest.LogClear.value)
         self.select_program(self.active_program.name, reset_attr=False)
         self._timer_update()
-        TestLogger.start_run(self.test_run.log)
+        self.logger.start_run(self.test_run.log)
         self.state['log'] = self.test_run.log
         self.attachment.set_run(self.test_run)
 
@@ -323,7 +323,7 @@ class Tester(ABC):
         self.active_test = -1
         self._update_tester()
         self.logger.info(f"Program '{self.active_program.name}' done. RunID: {run_id}. Result: {self.test_run.result.name}")
-        TestLogger.stop_run()
+        self.logger.stop_run()
         self.db.update_run_end(self.test_run)
         self.attachment.set_run(None)
 
