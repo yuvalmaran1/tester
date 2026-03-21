@@ -2,6 +2,9 @@ import pathlib
 import copy
 import pyjson5 as json
 import os
+import ctypes
+from threading import Thread
+from datetime import datetime, timedelta
 from abc import ABC, abstractmethod, ABCMeta
 from .TestDB import TestDB
 from .TestProgram import TestProgram
@@ -9,6 +12,7 @@ from .TestResult import TestResult
 from .TestReport import TestReport
 from .TesterIf import TesterIf, TesterRequest
 from .TesterConfig import TesterConfig
+from .StationConfig import StationConfig
 from .TestCase import TestCase
 from .TestLogger import TestLogger
 from .TestUtil import AbortRunException, TestDialog, TestAttachment
@@ -23,7 +27,6 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
     def __init__(self, config: TesterConfig) -> None:
         super().__init__()
         self.db = TestDB(config.db_config)
-        self.setup = json.load(open(config.setup_file,'r'))
         self.name = config.name
         self.description = config.description
         self.version: str = config.version
@@ -32,7 +35,16 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         self.attachment = TestAttachment()
         self.logger = TestLogger(name=self.name, dirname=config.log_dir)
         self.logger.info(f'Starting Tester {self.name}')
-        self.assets = self._init(self.setup)
+
+        # Load station config: prefer station_config_file, fall back to setup_file
+        station_file = config.station_config_file or config.setup_file
+        raw_station = json.load(open(station_file, 'r'))
+        station_cls = config.station_config_class or StationConfig
+        self.station_config: StationConfig = station_cls.model_validate(raw_station)
+        # Keep self.setup for backward compatibility
+        self.setup = raw_station
+
+        self.assets = self._init(self.station_config)
         self.duts = self.populate_duts(json.load(open(config.duts_file,'r')))
         self.duts_path = pathlib.Path(config.duts_file).parent.resolve()
         self.active_dut: Dut = None
@@ -78,7 +90,7 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
     def populate_duts(self, d):
         dut_list = []
         for dut in d['duts']:
-            dut_list.append(Dut.from_dict(dut, self.assets))
+            dut_list.append(Dut.from_dict(dut, self.assets, debug_reload=self.config.debug_reload))
         return dut_list
 
     def select_program(self, program_name: str, reset_attr = True):
@@ -281,5 +293,5 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
                 return {"code": 200, "data": "Stopping"}
 
     @abstractmethod
-    def _init(self, setup: dict) -> dict:
+    def _init(self, station_config: StationConfig) -> dict:
         pass

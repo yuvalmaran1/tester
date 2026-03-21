@@ -15,8 +15,8 @@ class SQLiteDatabase(DatabaseInterface):
     RUNS_COLS = "tester, tester_ver, dut, dut_desc, dut_product_id, dut_image, program, program_desc, start_date, end_date, result, log, attachment, program_modified, program_attr"
     RUNS_REPORT_COLS = "run_id, dut, program, start_date, end_date, result"
     RESULT_TABLE = "results"
-    RESULT_COLS_DEF = "result_id integer primary key autoincrement, run_id integer, date text, suite text, name text, tolerance text, value text, unit text, result text, comment text, infoonly integer, skip integer, attr text, result_type text"
-    RESULT_COLS = "run_id, date, suite, name, tolerance, value, unit, result, comment, infoonly, skip, attr, result_type"
+    RESULT_COLS_DEF = "result_id integer primary key autoincrement, run_id integer, date text, suite text, name text, tolerance text, value text, unit text, result text, comment text, infoonly integer, skip integer, attr text, result_type text, role text"
+    RESULT_COLS = "run_id, date, suite, name, tolerance, value, unit, result, comment, infoonly, skip, attr, result_type, role"
 
     def __init__(self, config_string: str):
         """Initialize SQLite database connection.
@@ -50,6 +50,13 @@ class SQLiteDatabase(DatabaseInterface):
                 cursor.execute(f'ALTER TABLE {self.RUNS_TABLE} ADD COLUMN program_attr text')
                 print("Added program_attr column to existing database")
 
+            # Check if role column exists in results table, add it if not (migration)
+            cursor.execute(f"PRAGMA table_info({self.RESULT_TABLE})")
+            result_columns = [column[1] for column in cursor.fetchall()]
+            if 'role' not in result_columns:
+                cursor.execute(f"ALTER TABLE {self.RESULT_TABLE} ADD COLUMN role text DEFAULT 'testcase'")
+                print("Added role column to existing database")
+
             con.commit()
 
     def create_run(self, run: TestRun) -> int:
@@ -80,8 +87,9 @@ class SQLiteDatabase(DatabaseInterface):
             cursor = con.cursor()
             entities = (run_id, result.date, result.suite, result.name, json.dumps(result.tolerance),
                        str(result.value), result.unit, str(result.result), result.comment,
-                       result.infoonly, result.skip, str(result.attr), result.result_type)
-            cursor.execute(f'INSERT INTO {self.RESULT_TABLE}({self.RESULT_COLS}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)', entities)
+                       result.infoonly, result.skip, str(result.attr), result.result_type,
+                       getattr(result, 'role', 'testcase'))
+            cursor.execute(f'INSERT INTO {self.RESULT_TABLE}({self.RESULT_COLS}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)', entities)
             con.commit()
 
     def get_run(self, run_id: int) -> TestRun:
@@ -137,7 +145,7 @@ class SQLiteDatabase(DatabaseInterface):
             cursor = con.cursor()
             cursor.execute(f'''
                 SELECT DISTINCT name FROM {self.RESULT_TABLE}
-                WHERE name NOT LIKE '%setup%' AND name NOT LIKE '%cleanup%'
+                WHERE role = 'testcase'
                 ORDER BY name
             ''')
             tests = cursor.fetchall()

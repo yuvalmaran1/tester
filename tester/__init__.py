@@ -9,4 +9,5 @@ from .TestRun import TestRun
 from .TestSuite import TestSuite
 from .TestReport import TestReport
 from .TesterConfig import TesterConfig
+from .StationConfig import StationConfig
 from .database import DatabaseFactory, DatabaseInterface, SQLiteDatabase, PostgreSQLDatabase
