@@ -93,7 +93,7 @@ class Tester(ABC):
     def populate_duts(self, d):
         dut_list = []
         for dut in d['duts']:
-            dut_list.append(Dut.from_dict(dut, self.assets))
+            dut_list.append(Dut.from_dict(dut, self.assets, debug_reload=self.config.debug_reload))
         return dut_list
 
     def __reset_stats(self, total=0):
