@@ -1,145 +1,92 @@
-import DownloadIcon from '@mui/icons-material/Download';
-import {
-    Button,
-    Chip,
-    TableCell,
-    TableRow
-} from '@mui/material';
-import _ from "lodash";
-import Link from 'next/link';
+'use client';
+import { TableCell, TableRow } from '@mui/material';
+import _ from 'lodash';
 
-export default function TestRunRow(props) {
-    const { row } = props;
+const RESULT_META = {
+    PASS:    { color: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.3)'  },
+    FAIL:    { color: '#ef4444', bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.3)'   },
+    ERROR:   { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)'  },
+    SKIPPED: { color: '#64748b', bg: 'rgba(100,116,139,0.1)',  border: 'rgba(100,116,139,0.25)'},
+    ABORTED: { color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.3)' },
+};
+const DEFAULT_META = { color: '#60a5fa', bg: 'rgba(96,165,250,0.1)', border: 'rgba(96,165,250,0.25)' };
 
-    const formatDuration = (startDate, endDate) => {
-        if (!startDate || !endDate) {
-            return '--:--:--';
-        }
+const formatDuration = (startDate, endDate) => {
+    if (!startDate || !endDate) return '—';
+    try {
+        const ms = new Date(endDate) - new Date(startDate);
+        if (ms < 0) return '—';
+        const h = Math.floor(ms / 3600000);
+        const m = Math.floor((ms % 3600000) / 60000);
+        const s = Math.floor((ms % 60000) / 1000);
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    } catch { return '—'; }
+};
 
-        try {
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            const durationMs = end - start;
-
-            if (durationMs < 0) {
-                return '--:--:--';
-            }
-
-            const hours = Math.floor(durationMs / (1000 * 60 * 60));
-            const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((durationMs % (1000 * 60)) / 1000);
-
-            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        } catch (error) {
-            console.error('Error calculating duration:', error);
-            return '--:--:--';
-        }
-    };
-
-    const getResultChip = (result) => {
-        const resultValue = _.get(row, 'result', 'UNKNOWN');
-
-        switch (resultValue) {
-            case 'PASS':
-                return <Chip label="PASS" size="small" sx={{ backgroundColor: '#d1fae5', color: '#065f46', fontWeight: 600 }} />;
-            case 'FAIL':
-                return <Chip label="FAIL" size="small" sx={{ backgroundColor: '#fee2e2', color: '#991b1b', fontWeight: 600 }} />;
-            case 'ERROR':
-                return <Chip label="ERROR" size="small" sx={{ backgroundColor: '#fef3c7', color: '#92400e', fontWeight: 600 }} />;
-            case 'SKIPPED':
-                return <Chip label="SKIPPED" size="small" sx={{ backgroundColor: '#f1f5f9', color: '#475569', fontWeight: 600 }} />;
-            case 'ABORTED':
-                return <Chip label="ABORTED" size="small" sx={{ backgroundColor: '#e9d5ff', color: '#6b21a8', fontWeight: 600 }} />;
-            default:
-                return <Chip label={resultValue} size="small" sx={{ backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: 600 }} />;
-        }
-    };
+export default function TestRunRow({ row }) {
+    const result = _.get(row, 'result', 'UNKNOWN');
+    const meta   = RESULT_META[result] || DEFAULT_META;
+    const runId  = _.get(row, 'run_id', '0');
 
     return (
-        <TableRow
-            hover
-            sx={{
-                '&:hover': {
-                    backgroundColor: '#f8fafc'
-                },
-                '& > *': {
-                    borderBottom: '1px solid #f1f5f9'
-                }
-            }}
-        >
-            <TableCell align="center">
-                <Button
-                    variant="outlined"
-                    href={'/generate_report/' + _.get(row, 'run_id', '0')}
-                    sx={{
-                        minWidth: 'auto',
-                        width: 40,
-                        height: 40,
-                        borderRadius: '8px',
-                        borderColor: '#10b981',
-                        color: '#10b981',
-                        '&:hover': {
-                            borderColor: '#059669',
-                            backgroundColor: '#ecfdf5'
-                        }
-                    }}
+        <TableRow sx={{
+            '&:hover': { backgroundColor: 'rgba(99,102,241,0.05)' },
+            borderLeft: `2px solid ${meta.border}`,
+            '& td': { borderBottom: '1px solid rgba(45,55,72,0.5)' },
+        }}>
+            {/* Download */}
+            <TableCell align="center" sx={{ width: 56 }}>
+                <a
+                    href={`/generate_report/${runId}`}
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors"
+                    style={{ color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}
+                    title="Download report"
                 >
-                    <DownloadIcon fontSize="small" />
-                </Button>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M5 20h14v-2H5zM19 9h-4V3H9v6H5l7 7z"/>
+                        </svg>
+                </a>
             </TableCell>
 
-            <TableCell align="center">
-                <Link
-                    href={'/show_report/' + _.get(row, 'run_id', '0')}
-                    className="text-primary-600 hover:text-primary-700 font-mono font-semibold"
-                >
-                    {_.get(row, 'run_id', '')}
-                </Link>
+            {/* Run ID */}
+            <TableCell align="center" sx={{ width: 72 }}>
+                <a href={`/show_report/${runId}`}
+                    style={{ color: '#818cf8', fontFamily: 'monospace', fontWeight: 700, fontSize: '0.8rem' }}>
+                    #{runId}
+                </a>
             </TableCell>
 
-            <TableCell align="left">
-                <Link
-                    href={'/show_report/' + _.get(row, 'run_id', '0')}
-                    className="text-gray-700 hover:text-primary-600 font-medium"
-                >
+            {/* DUT */}
+            <TableCell>
+                <a href={`/show_report/${runId}`}
+                    style={{ color: '#e2e8f0', fontWeight: 500, fontSize: '0.875rem' }}>
                     {_.get(row, 'dut', '')}
-                </Link>
+                </a>
             </TableCell>
 
-            <TableCell align="left">
-                <Link
-                    href={'/show_report/' + _.get(row, 'run_id', '0')}
-                    className="text-gray-700 hover:text-primary-600 font-medium"
-                >
+            {/* Program */}
+            <TableCell>
+                <a href={`/show_report/${runId}`}
+                    style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
                     {_.get(row, 'program', '')}
-                </Link>
+                </a>
             </TableCell>
 
-            <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.875rem', color: '#64748b' }}>
-                <Link
-                    href={'/show_report/' + _.get(row, 'run_id', '0')}
-                    className="text-gray-600 hover:text-primary-600"
-                >
-                    {_.get(row, 'start_date', '')}
-                </Link>
+            {/* Start date */}
+            <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b' }}>
+                {_.get(row, 'start_date', '')}
             </TableCell>
 
-            <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.875rem', color: '#64748b' }}>
-                <Link
-                    href={'/show_report/' + _.get(row, 'run_id', '0')}
-                    className="text-gray-600 hover:text-primary-600"
-                >
-                    {formatDuration(_.get(row, 'start_date', ''), _.get(row, 'end_date', ''))}
-                </Link>
+            {/* Duration */}
+            <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b' }}>
+                {formatDuration(_.get(row, 'start_date'), _.get(row, 'end_date'))}
             </TableCell>
 
-            <TableCell align="center">
-                <Link
-                    href={'/show_report/' + _.get(row, 'run_id', '0')}
-                    className="hover:opacity-80 transition-opacity"
-                >
-                    {getResultChip(_.get(row, 'result', ''))}
-                </Link>
+            {/* Result */}
+            <TableCell align="center" sx={{ width: 96 }}>
+                <span className="badge" style={{ backgroundColor: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}>
+                    {result}
+                </span>
             </TableCell>
         </TableRow>
     );

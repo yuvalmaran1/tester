@@ -1,104 +1,136 @@
 'use client';
-import { Box, Grid, Typography } from '@mui/material';
-// import Image from 'next/image'; // Removed for static file serving
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useConnection } from '../contexts/ConnectionContext';
+import { socket } from '../socket';
 
-export default function Navbar() {
-    const { connected, connecting, isOnline } = useConnection();
+const NAV = [
+    {
+        href: '/',
+        label: 'Dashboard',
+        icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+        ),
+    },
+    {
+        href: '/results',
+        label: 'Runs',
+        icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+        ),
+    },
+    {
+        href: '/test-query',
+        label: 'Tests',
+        icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+        ),
+    },
+];
+
+export default function Sidebar() {
+    const pathname = usePathname();
+    const { connected, connecting } = useConnection();
+    const [testerName, setTesterName] = useState('');
+
+    useEffect(() => {
+        const onTester = (data) => { if (data?.name) setTesterName(data.name); };
+        const onState  = (data) => { if (data?.tester?.name) setTesterName(data.tester.name); };
+        socket.on('tester', onTester);
+        socket.on('state',  onState);
+        return () => {
+            socket.off('tester', onTester);
+            socket.off('state',  onState);
+        };
+    }, []);
 
     return (
-        <nav className="bg-white/90 backdrop-blur-md shadow-xl border-b border-gray-200/50 sticky top-0 z-50">
-            <div className="max-w-7xl mx-auto px-6 py-4">
-                <Grid container spacing={3} alignItems="center" justifyContent="space-between">
-                    <Grid item xs={12} md={4}>
-                        <Box className="flex items-center space-x-4">
-                            <div className="w-12 h-12 flex items-center justify-center">
-                                <img
-                                    src="/tester.png"
-                                    alt="Tester Logo"
-                                    width={40}
-                                    height={40}
-                                    className="object-contain"
-                                />
-                            </div>
-                            <Typography
-                                variant="h5"
-                                className="font-bold text-primary-600"
-                                sx={{
-                                    fontWeight: 700,
-                                    fontSize: '1.5rem',
-                                    letterSpacing: '-0.025em'
-                                }}
-                            >
-                                HiL Test Framework
-                            </Typography>
-                        </Box>
-                    </Grid>
-
-                    <Grid item xs={12} md={4}>
-                        <Box className="flex justify-center space-x-8">
-                            <Link
-                                href="/"
-                                className={`font-semibold transition-all duration-200 relative group px-4 py-2 rounded-lg ${isOnline
-                                    ? 'text-gray-700 hover:text-primary-600 hover:bg-primary-50'
-                                    : 'text-gray-400 cursor-not-allowed'
-                                    }`}
-                            >
-                                Dashboard
-                                {isOnline && (
-                                    <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-primary-500 to-accent-500 transition-all duration-200 group-hover:w-full"></span>
-                                )}
-                            </Link>
-                            <Link
-                                href="/results"
-                                className={`font-semibold transition-all duration-200 relative group px-4 py-2 rounded-lg ${isOnline
-                                    ? 'text-gray-700 hover:text-primary-600 hover:bg-primary-50'
-                                    : 'text-gray-400 cursor-not-allowed'
-                                    }`}
-                            >
-                                Runs
-                                {isOnline && (
-                                    <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-primary-500 to-accent-500 transition-all duration-200 group-hover:w-full"></span>
-                                )}
-                            </Link>
-                            <Link
-                                href="/test-query"
-                                className={`font-semibold transition-all duration-200 relative group px-4 py-2 rounded-lg ${isOnline
-                                    ? 'text-gray-700 hover:text-primary-600 hover:bg-primary-50'
-                                    : 'text-gray-400 cursor-not-allowed'
-                                    }`}
-                            >
-                                Tests
-                                {isOnline && (
-                                    <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-primary-500 to-accent-500 transition-all duration-200 group-hover:w-full"></span>
-                                )}
-                            </Link>
-                        </Box>
-                    </Grid>
-
-                    <Grid item xs={12} md={4}>
-                        <Box className="flex justify-end">
-                            {connecting ? (
-                                <div className="flex items-center space-x-3 bg-gradient-to-r from-warning-500 to-warning-600 text-white px-4 py-2 rounded-full shadow-lg">
-                                    <div className="w-3 h-3 bg-white rounded-full animate-spin"></div>
-                                    <span className="font-semibold text-sm">Connecting...</span>
-                                </div>
-                            ) : connected ? (
-                                <div className="flex items-center space-x-3 bg-gradient-to-r from-success-500 to-success-600 text-white px-4 py-2 rounded-full shadow-lg">
-                                    <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
-                                    <span className="font-semibold text-sm">System Online</span>
-                                </div>
-                            ) : (
-                                <div className="flex items-center space-x-3 bg-gradient-to-r from-danger-500 to-danger-600 text-white px-4 py-2 rounded-full shadow-lg">
-                                    <div className="w-3 h-3 bg-white rounded-full"></div>
-                                    <span className="font-semibold text-sm">System Offline</span>
-                                </div>
-                            )}
-                        </Box>
-                    </Grid>
-                </Grid>
+        <aside
+            className="flex flex-col shrink-0 h-screen"
+            style={{
+                width: '220px',
+                backgroundColor: '#0d1117',
+                borderRight: '1px solid #2d3748',
+            }}
+        >
+            {/* Brand */}
+            <div style={{ borderBottom: '1px solid #2d3748', padding: '1rem 1.25rem' }}>
+                <div className="flex items-center gap-3">
+                    <img src="/icon.svg" alt="logo" style={{ width: '34px', height: '34px', flexShrink: 0 }} />
+                    <div style={{ minWidth: 0 }}>
+                        <div style={{
+                            color: '#e2e8f0', fontWeight: 700, fontSize: '0.875rem',
+                            lineHeight: 1.25, overflow: 'hidden',
+                            textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                            {testerName || 'HiL Framework'}
+                        </div>
+                        <div style={{
+                            color: '#6366f1', fontSize: '0.6875rem', fontWeight: 600,
+                            textTransform: 'uppercase', letterSpacing: '0.07em',
+                            marginTop: '2px',
+                        }}>
+                            Test Framework
+                        </div>
+                    </div>
+                </div>
             </div>
-        </nav>
+
+            {/* Nav links */}
+            <nav className="flex-1 px-3 py-4 space-y-1">
+                {NAV.map(({ href, label, icon }) => {
+                    const active = pathname === href;
+                    return (
+                        <Link
+                            key={href}
+                            href={href}
+                            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150"
+                            style={{
+                                color:           active ? '#e2e8f0' : '#8b9eb0',
+                                backgroundColor: active ? 'rgba(99,102,241,0.15)' : 'transparent',
+                                borderLeft:      active ? '2px solid #6366f1' : '2px solid transparent',
+                            }}
+                        >
+                            <span style={{ color: active ? '#818cf8' : '#64748b' }}>{icon}</span>
+                            {label}
+                        </Link>
+                    );
+                })}
+            </nav>
+
+            {/* Connection status */}
+            <div className="px-4 py-4" style={{ borderTop: '1px solid #2d3748' }}>
+                <div className="flex items-center gap-2.5">
+                    <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{
+                            backgroundColor: connecting
+                                ? '#f59e0b'
+                                : connected
+                                    ? '#10b981'
+                                    : '#ef4444',
+                            boxShadow: connecting
+                                ? '0 0 6px #f59e0b'
+                                : connected
+                                    ? '0 0 6px #10b981'
+                                    : '0 0 6px #ef4444',
+                        }}
+                    />
+                    <span className="text-xs font-medium" style={{ color: '#8b9eb0' }}>
+                        {connecting ? 'Connecting…' : connected ? 'System Online' : 'Disconnected'}
+                    </span>
+                </div>
+            </div>
+        </aside>
     );
 }

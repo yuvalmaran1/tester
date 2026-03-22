@@ -2,14 +2,9 @@
 import {
     Backdrop,
     Box,
-    Button,
-    Card,
-    CardContent,
-    CardHeader,
     Chip,
     CircularProgress,
     FormControl,
-    Grid,
     InputLabel,
     MenuItem,
     OutlinedInput,
@@ -22,26 +17,50 @@ import {
     TableHead,
     TableRow,
     TextField,
-    Typography
 } from "@mui/material";
-// import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-// import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-// import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import axios from 'axios';
 import * as React from "react";
 import ResultPlot from '../components/ResultPlot';
 import TestHistogram from '../components/TestHistogram';
 import { useConnection } from '../contexts/ConnectionContext';
 
+const RESULT_META = {
+    PASS:    { color: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.3)'  },
+    FAIL:    { color: '#ef4444', bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.3)'   },
+    ERROR:   { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)'  },
+    SKIPPED: { color: '#64748b', bg: 'rgba(100,116,139,0.1)',  border: 'rgba(100,116,139,0.25)'},
+    ABORTED: { color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.3)' },
+};
+const DEFAULT_META = { color: '#60a5fa', bg: 'rgba(96,165,250,0.1)', border: 'rgba(96,165,250,0.25)' };
+
+const ResultBadge = ({ result }) => {
+    const meta = RESULT_META[result] || DEFAULT_META;
+    return (
+        <span className="badge" style={{ backgroundColor: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}>
+            {result}
+        </span>
+    );
+};
+
+const formatDuration = (startDate, endDate) => {
+    if (!startDate || !endDate) return '—';
+    try {
+        const ms = new Date(endDate) - new Date(startDate);
+        if (ms < 0) return '—';
+        const h = Math.floor(ms / 3600000);
+        const m = Math.floor((ms % 3600000) / 60000);
+        const s = Math.floor((ms % 60000) / 1000);
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    } catch { return '—'; }
+};
+
 export default function TestQueryPage() {
-    const { connected, connecting, isOnline } = useConnection();
+    const { isOnline } = useConnection();
     const [loading, setLoading] = React.useState(false);
     const [testResults, setTestResults] = React.useState([]);
     const [availableTests, setAvailableTests] = React.useState([]);
     const [availablePrograms, setAvailablePrograms] = React.useState([]);
     const [availableDuts, setAvailableDuts] = React.useState([]);
-
-    // Filter states - now supporting multiple selections
     const [selectedTests, setSelectedTests] = React.useState([]);
     const [selectedPrograms, setSelectedPrograms] = React.useState([]);
     const [selectedDuts, setSelectedDuts] = React.useState([]);
@@ -51,441 +70,216 @@ export default function TestQueryPage() {
 
     const getAvailableTests = React.useCallback(() => {
         if (!isOnline) return;
-
-        setLoading(true);
-        axios
-            .get("/get_available_tests")
-            .then((response) => {
-                setAvailableTests(response.data);
-                setLoading(false);
-            })
-            .catch((error) => {
-                console.error('Error fetching available tests:', error);
-                setLoading(false);
-            });
+        axios.get("/get_available_tests").then(r => setAvailableTests(r.data)).catch(() => {});
     }, [isOnline]);
 
     const getAvailablePrograms = React.useCallback(() => {
         if (!isOnline) return;
-
-        axios
-            .get("/get_available_programs")
-            .then((response) => {
-                setAvailablePrograms(response.data);
-            })
-            .catch((error) => {
-                console.error('Error fetching available programs:', error);
-            });
+        axios.get("/get_available_programs").then(r => setAvailablePrograms(r.data)).catch(() => {});
     }, [isOnline]);
 
     const getAvailableDuts = React.useCallback(() => {
         if (!isOnline) return;
-
-        axios
-            .get("/get_available_duts")
-            .then((response) => {
-                setAvailableDuts(response.data);
-            })
-            .catch((error) => {
-                console.error('Error fetching available DUTs:', error);
-            });
+        axios.get("/get_available_duts").then(r => setAvailableDuts(r.data)).catch(() => {});
     }, [isOnline]);
 
     const queryTestResults = React.useCallback(() => {
         if (!isOnline || selectedTests.length === 0) return;
-
         setLoading(true);
         const params = {
-            test_names: selectedTests.length > 0 ? selectedTests.join(',') : undefined,
-            programs: selectedPrograms.length > 0 ? selectedPrograms.join(',') : undefined,
-            duts: selectedDuts.length > 0 ? selectedDuts.join(',') : undefined,
-            results: selectedResults.length > 0 ? selectedResults.join(',') : undefined,
+            test_names: selectedTests.join(',')  || undefined,
+            programs:   selectedPrograms.join(',') || undefined,
+            duts:       selectedDuts.join(',')    || undefined,
+            results:    selectedResults.join(',') || undefined,
             start_date: startDate ? startDate.toISOString().split('T')[0] : undefined,
-            end_date: endDate ? endDate.toISOString().split('T')[0] : undefined
+            end_date:   endDate   ? endDate.toISOString().split('T')[0]   : undefined,
         };
-
-        // Remove undefined values
-        Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
-
-        axios
-            .get("/query_test_results", { params })
-            .then((response) => {
-                setTestResults(response.data);
-                setLoading(false);
-            })
-            .catch((error) => {
-                console.error('Error querying test results:', error);
-                setLoading(false);
-            });
+        Object.keys(params).forEach(k => params[k] === undefined && delete params[k]);
+        axios.get("/query_test_results", { params })
+            .then(r => { setTestResults(r.data); setLoading(false); })
+            .catch(() => setLoading(false));
     }, [selectedTests, selectedPrograms, selectedDuts, selectedResults, startDate, endDate, isOnline]);
 
-    const clearFilters = React.useCallback(() => {
-        setSelectedTests([]);
-        setSelectedPrograms([]);
-        setSelectedDuts([]);
-        setSelectedResults([]);
-        setStartDate(null);
-        setEndDate(null);
-        setTestResults([]);
-    }, []);
+    const clearFilters = () => {
+        setSelectedTests([]); setSelectedPrograms([]); setSelectedDuts([]);
+        setSelectedResults([]); setStartDate(null); setEndDate(null); setTestResults([]);
+    };
 
     React.useEffect(() => {
-        if (isOnline) {
-            getAvailableTests();
-            getAvailablePrograms();
-            getAvailableDuts();
-        }
+        if (isOnline) { getAvailableTests(); getAvailablePrograms(); getAvailableDuts(); }
     }, [isOnline, getAvailableTests, getAvailablePrograms, getAvailableDuts]);
 
-    // Clear results when any filter changes to avoid user confusion
-    React.useEffect(() => {
-        setTestResults([]);
-    }, [selectedTests, selectedPrograms, selectedDuts, selectedResults, startDate, endDate]);
+    React.useEffect(() => { setTestResults([]); },
+        [selectedTests, selectedPrograms, selectedDuts, selectedResults, startDate, endDate]);
 
-    const getResultChip = (result) => {
-        switch (result) {
-            case 'PASS':
-                return <Chip label="PASS" size="small" sx={{ backgroundColor: '#d1fae5', color: '#065f46', fontWeight: 600 }} />;
-            case 'FAIL':
-                return <Chip label="FAIL" size="small" sx={{ backgroundColor: '#fee2e2', color: '#991b1b', fontWeight: 600 }} />;
-            case 'ERROR':
-                return <Chip label="ERROR" size="small" sx={{ backgroundColor: '#fef3c7', color: '#92400e', fontWeight: 600 }} />;
-            case 'SKIPPED':
-                return <Chip label="SKIPPED" size="small" sx={{ backgroundColor: '#f1f5f9', color: '#475569', fontWeight: 600 }} />;
-            case 'ABORTED':
-                return <Chip label="ABORTED" size="small" sx={{ backgroundColor: '#e9d5ff', color: '#6b21a8', fontWeight: 600 }} />;
-            default:
-                return <Chip label={result} size="small" sx={{ backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: 600 }} />;
-        }
-    };
-
-    const formatDuration = (startDate, endDate) => {
-        if (!startDate || !endDate) return '--:--:--';
-
-        try {
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            const durationMs = end - start;
-
-            if (durationMs < 0) return '--:--:--';
-
-            const hours = Math.floor(durationMs / (1000 * 60 * 60));
-            const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((durationMs % (1000 * 60)) / 1000);
-
-            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        } catch (error) {
-            return '--:--:--';
-        }
-    };
+    const MultiSelect = ({ label, value, onChange, options }) => (
+        <FormControl fullWidth size="small">
+            <InputLabel>{label}</InputLabel>
+            <Select
+                multiple
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                input={<OutlinedInput label={label} />}
+                renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {selected.map(v => (
+                            <Chip key={v} label={v} size="small"
+                                sx={{ backgroundColor: 'rgba(99,102,241,0.15)', color: '#818cf8',
+                                      border: '1px solid rgba(99,102,241,0.3)', borderRadius: '4px',
+                                      fontSize: '0.7rem', fontWeight: 600 }} />
+                        ))}
+                    </Box>
+                )}
+            >
+                {options.map(o => <MenuItem key={o} value={o}>{o}</MenuItem>)}
+            </Select>
+        </FormControl>
+    );
 
     return (
-        <main className="animate-fade-in">
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-                <div className="container mx-auto px-4 py-8">
-                    {/* Header */}
-                    <div className="mb-8">
-                        <h1 className="text-4xl font-bold text-gray-900 mb-2">Tests</h1>
-                        <p className="text-gray-600">Compare test results across multiple runs</p>
-                    </div>
+        <main className="animate-fade-in p-6">
+            <Backdrop open={loading} sx={{ color: '#fff', zIndex: 9999, backdropFilter: 'blur(4px)', backgroundColor: 'rgba(13,17,23,0.7)' }}>
+                <CircularProgress sx={{ color: '#6366f1' }} />
+            </Backdrop>
 
-                    {/* Filters Section */}
-                    <Card className="mb-8">
-                        <CardHeader title="Filters" />
-                        <CardContent>
-                            <Grid container spacing={3}>
-                                {/* Test Selection */}
-                                <Grid item xs={12} md={6}>
-                                    <FormControl fullWidth>
-                                        <InputLabel>Test Names</InputLabel>
-                                        <Select
-                                            multiple
-                                            value={selectedTests}
-                                            onChange={(e) => setSelectedTests(e.target.value)}
-                                            input={<OutlinedInput label="Test Names" />}
-                                            renderValue={(selected) => (
-                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                                    {selected.map((value) => (
-                                                        <Chip key={value} label={value} size="small" />
-                                                    ))}
-                                                </Box>
-                                            )}
-                                        >
-                                            {availableTests.map((test) => (
-                                                <MenuItem key={test} value={test}>
-                                                    {test}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
+            {/* Header */}
+            <div className="mb-6">
+                <h1 className="text-2xl font-bold" style={{ color: '#e2e8f0' }}>Tests</h1>
+                <p className="text-sm mt-0.5" style={{ color: '#64748b' }}>Compare results across runs</p>
+            </div>
 
-                                {/* Program Filter */}
-                                <Grid item xs={12} md={6}>
-                                    <FormControl fullWidth>
-                                        <InputLabel>Programs</InputLabel>
-                                        <Select
-                                            multiple
-                                            value={selectedPrograms}
-                                            onChange={(e) => setSelectedPrograms(e.target.value)}
-                                            input={<OutlinedInput label="Programs" />}
-                                            renderValue={(selected) => (
-                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                                    {selected.map((value) => (
-                                                        <Chip key={value} label={value} size="small" />
-                                                    ))}
-                                                </Box>
-                                            )}
-                                        >
-                                            {availablePrograms.map((program) => (
-                                                <MenuItem key={program} value={program}>
-                                                    {program}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
-
-                                {/* DUT Filter */}
-                                <Grid item xs={12} md={6}>
-                                    <FormControl fullWidth>
-                                        <InputLabel>Devices Under Test</InputLabel>
-                                        <Select
-                                            multiple
-                                            value={selectedDuts}
-                                            onChange={(e) => setSelectedDuts(e.target.value)}
-                                            input={<OutlinedInput label="Devices Under Test" />}
-                                            renderValue={(selected) => (
-                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                                    {selected.map((value) => (
-                                                        <Chip key={value} label={value} size="small" />
-                                                    ))}
-                                                </Box>
-                                            )}
-                                        >
-                                            {availableDuts.map((dut) => (
-                                                <MenuItem key={dut} value={dut}>
-                                                    {dut}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
-
-                                {/* Result Filter */}
-                                <Grid item xs={12} md={6}>
-                                    <FormControl fullWidth>
-                                        <InputLabel>Test Results</InputLabel>
-                                        <Select
-                                            multiple
-                                            value={selectedResults}
-                                            onChange={(e) => setSelectedResults(e.target.value)}
-                                            input={<OutlinedInput label="Test Results" />}
-                                            renderValue={(selected) => (
-                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                                    {selected.map((value) => (
-                                                        <Chip key={value} label={value} size="small" />
-                                                    ))}
-                                                </Box>
-                                            )}
-                                        >
-                                            <MenuItem value="PASS">PASS</MenuItem>
-                                            <MenuItem value="FAIL">FAIL</MenuItem>
-                                            <MenuItem value="ERROR">ERROR</MenuItem>
-                                            <MenuItem value="SKIPPED">SKIPPED</MenuItem>
-                                            <MenuItem value="ABORTED">ABORTED</MenuItem>
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
-
-                                {/* Date Range */}
-                                <Grid item xs={12} md={6}>
-                                    <TextField
-                                        label="Start Date"
-                                        type="date"
-                                        value={startDate ? startDate.toISOString().split('T')[0] : ''}
-                                        onChange={(e) => setStartDate(e.target.value ? new Date(e.target.value) : null)}
-                                        InputLabelProps={{ shrink: true }}
-                                        fullWidth
-                                    />
-                                </Grid>
-
-                                <Grid item xs={12} md={6}>
-                                    <TextField
-                                        label="End Date"
-                                        type="date"
-                                        value={endDate ? endDate.toISOString().split('T')[0] : ''}
-                                        onChange={(e) => setEndDate(e.target.value ? new Date(e.target.value) : null)}
-                                        InputLabelProps={{ shrink: true }}
-                                        fullWidth
-                                    />
-                                </Grid>
-
-                                {/* Query and Clear Buttons */}
-                                <Grid item xs={12}>
-                                    <Box display="flex" justifyContent="center" gap={2} mt={2}>
-                                        <Button
-                                            variant="contained"
-                                            onClick={queryTestResults}
-                                            disabled={loading || selectedTests.length === 0}
-                                            size="large"
-                                            sx={{ minWidth: 200 }}
-                                        >
-                                            {loading ? <CircularProgress size={24} /> : 'Query Results'}
-                                        </Button>
-                                        <Button
-                                            variant="outlined"
-                                            onClick={clearFilters}
-                                            disabled={loading}
-                                            size="large"
-                                            sx={{ minWidth: 120 }}
-                                        >
-                                            Clear
-                                        </Button>
-                                    </Box>
-                                </Grid>
-                            </Grid>
-                        </CardContent>
-                    </Card>
-
-                    {/* Histogram Section */}
-                    {testResults.length > 0 && selectedTests.length > 0 && (
-                        (() => {
-                            // Group results by test name for histogram
-                            const resultsByTest = testResults.reduce((acc, result) => {
-                                const testName = result.Name;
-                                if (!acc[testName]) {
-                                    acc[testName] = [];
-                                }
-                                acc[testName].push(result);
-                                return acc;
-                            }, {});
-
-                            // Show histogram for each selected test that has numeric/bool/string/passfail results
-                            return Object.entries(resultsByTest).map(([testName, results]) => {
-                                const firstResult = results[0];
-                                const testType = firstResult?.ResultType?.toLowerCase();
-
-                                // Show histogram for numeric, bool, string, and passfail types
-                                if (['numeric', 'bool', 'string', 'passfail'].includes(testType)) {
-                                    return (
-                                        <TestHistogram
-                                            key={testName}
-                                            testResults={results}
-                                            testType={testType}
-                                            testName={testName}
-                                        />
-                                    );
-                                }
-                                return null;
-                            }).filter(Boolean);
-                        })()
-                    )}
-
-                    {/* Results Section */}
-                    {testResults.length > 0 && (
-                        <Card>
-                            <CardHeader
-                                title={`Results for ${selectedTests.length > 0 ? selectedTests.join(', ') : 'All Tests'}`}
-                                subheader={`${testResults.length} test result(s) found`}
-                            />
-                            <CardContent>
-                                <TableContainer component={Paper}>
-                                    <Table stickyHeader>
-                                        <TableHead>
-                                            <TableRow>
-                                                <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>Run ID</TableCell>
-                                                <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>Program</TableCell>
-                                                <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>DUT</TableCell>
-                                                <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>Suite</TableCell>
-                                                <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>Test Name</TableCell>
-                                                <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>Result</TableCell>
-                                                <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', minWidth: '150px', width: '150px', textAlign: 'center' }}>Value</TableCell>
-                                                <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>Unit</TableCell>
-                                                <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>Start Time</TableCell>
-                                                <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>Duration</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {testResults.map((result, index) => {
-                                                const hasPlot = result.PlotData && result.PlotData.points && result.PlotData.points.length > 0;
-
-                                                return (
-                                                    <React.Fragment key={index}>
-                                                        <TableRow>
-                                                            <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                                                                {result.run_id || '-'}
-                                                            </TableCell>
-                                                            <TableCell>{result.Program || '-'}</TableCell>
-                                                            <TableCell>{result.DUT || '-'}</TableCell>
-                                                            <TableCell>{result.Suite || '-'}</TableCell>
-                                                            <TableCell>{result.Name || '-'}</TableCell>
-                                                            <TableCell>{getResultChip(result.Result)}</TableCell>
-                                                            <TableCell sx={{
-                                                                fontFamily: 'monospace',
-                                                                minWidth: '150px',
-                                                                width: '150px',
-                                                                backgroundColor: '#fafafa',
-                                                                border: '1px solid #e0e0e0',
-                                                                textAlign: 'center'
-                                                            }}>
-                                                                {result.Value || '-'}
-                                                            </TableCell>
-                                                            <TableCell>{result.Unit || '-'}</TableCell>
-                                                            <TableCell sx={{ fontFamily: 'monospace' }}>
-                                                                {result.Time ? new Date(result.Time).toLocaleString() : '-'}
-                                                            </TableCell>
-                                                            <TableCell sx={{ fontFamily: 'monospace' }}>
-                                                                {formatDuration(result.Time, result.Time)}
-                                                            </TableCell>
-                                                        </TableRow>
-                                                        {hasPlot && (
-                                                            <ResultPlot
-                                                                show={true}
-                                                                plotData={result.PlotData}
-                                                            />
-                                                        )}
-                                                    </React.Fragment>
-                                                );
-                                            })}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* No Tests Selected Message */}
-                    {selectedTests.length === 0 && (
-                        <Card>
-                            <CardContent>
-                                <Typography variant="h6" align="center" color="textSecondary">
-                                    Please select at least one test to query results
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* No Results Message */}
-                    {selectedTests.length > 0 && testResults.length === 0 && !loading && (
-                        <Card>
-                            <CardContent>
-                                <Typography variant="h6" align="center" color="textSecondary">
-                                    No results found for the selected criteria
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    )}
+            {/* Filters */}
+            <div className="card mb-6">
+                <h2 className="text-sm font-semibold mb-4" style={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    Filters
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <MultiSelect label="Test Names"         value={selectedTests}    onChange={setSelectedTests}    options={availableTests}    />
+                    <MultiSelect label="Programs"           value={selectedPrograms} onChange={setSelectedPrograms} options={availablePrograms} />
+                    <MultiSelect label="Devices Under Test" value={selectedDuts}     onChange={setSelectedDuts}     options={availableDuts}     />
+                    <MultiSelect
+                        label="Results" value={selectedResults} onChange={setSelectedResults}
+                        options={['PASS','FAIL','ERROR','SKIPPED','ABORTED']}
+                    />
+                    <TextField
+                        label="Start Date" type="date" size="small" fullWidth
+                        value={startDate ? startDate.toISOString().split('T')[0] : ''}
+                        onChange={(e) => setStartDate(e.target.value ? new Date(e.target.value) : null)}
+                        InputLabelProps={{ shrink: true }}
+                    />
+                    <TextField
+                        label="End Date" type="date" size="small" fullWidth
+                        value={endDate ? endDate.toISOString().split('T')[0] : ''}
+                        onChange={(e) => setEndDate(e.target.value ? new Date(e.target.value) : null)}
+                        InputLabelProps={{ shrink: true }}
+                    />
+                </div>
+                <div className="flex justify-center gap-3">
+                    <button
+                        onClick={queryTestResults}
+                        disabled={loading || selectedTests.length === 0}
+                        className="px-6 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-40"
+                        style={{ background: 'linear-gradient(135deg,#6366f1,#4338ca)', color: '#fff' }}
+                    >
+                        {loading ? 'Querying…' : 'Query Results'}
+                    </button>
+                    <button
+                        onClick={clearFilters}
+                        disabled={loading}
+                        className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: '1px solid #2d3748' }}
+                    >
+                        Clear
+                    </button>
                 </div>
             </div>
 
-            {/* Loading Backdrop */}
-            <Backdrop
-                sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
-                open={loading}
-            >
-                <CircularProgress color="inherit" />
-            </Backdrop>
+            {/* Histograms */}
+            {testResults.length > 0 && selectedTests.length > 0 && (() => {
+                const byTest = testResults.reduce((acc, r) => {
+                    const n = r.Name;
+                    if (!acc[n]) acc[n] = [];
+                    acc[n].push(r);
+                    return acc;
+                }, {});
+                return Object.entries(byTest).map(([testName, results]) => {
+                    const type = results[0]?.ResultType?.toLowerCase();
+                    if (['numeric','bool','string','passfail'].includes(type)) {
+                        return <TestHistogram key={testName} testResults={results} testType={type} testName={testName} />;
+                    }
+                    return null;
+                }).filter(Boolean);
+            })()}
+
+            {/* Results table */}
+            {testResults.length > 0 && (
+                <div className="card">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-sm font-semibold" style={{ color: '#e2e8f0' }}>
+                            {selectedTests.length > 0 ? selectedTests.join(', ') : 'All Tests'}
+                        </h2>
+                        <span className="text-xs font-mono" style={{ color: '#64748b' }}>
+                            {testResults.length} result{testResults.length !== 1 ? 's' : ''}
+                        </span>
+                    </div>
+                    <TableContainer component={Paper} sx={{ borderRadius: '8px', border: '1px solid #2d3748' }}>
+                        <Table stickyHeader size="small">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell sx={{ width: 60 }}>Run</TableCell>
+                                    <TableCell>Program</TableCell>
+                                    <TableCell>DUT</TableCell>
+                                    <TableCell>Suite</TableCell>
+                                    <TableCell>Test Name</TableCell>
+                                    <TableCell align="center" sx={{ width: 96 }}>Result</TableCell>
+                                    <TableCell align="center" sx={{ width: 120 }}>Value</TableCell>
+                                    <TableCell>Unit</TableCell>
+                                    <TableCell>Time</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {testResults.map((r, i) => {
+                                    const hasPlot = r.PlotData?.points?.length > 0;
+                                    return (
+                                        <React.Fragment key={i}>
+                                            <TableRow sx={{ '&:hover': { backgroundColor: 'rgba(99,102,241,0.05)' }, '& td': { borderBottom: '1px solid rgba(45,55,72,0.5)' } }}>
+                                                <TableCell sx={{ fontFamily: 'monospace', fontWeight: 700, color: '#818cf8', fontSize: '0.8rem' }}>
+                                                    #{r.run_id || '—'}
+                                                </TableCell>
+                                                <TableCell sx={{ fontSize: '0.8rem', color: '#94a3b8' }}>{r.Program || '—'}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.85rem', fontWeight: 500 }}>{r.DUT || '—'}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.8rem', color: '#94a3b8' }}>{r.Suite || '—'}</TableCell>
+                                                <TableCell sx={{ fontWeight: 600 }}>{r.Name || '—'}</TableCell>
+                                                <TableCell align="center"><ResultBadge result={r.Result} /></TableCell>
+                                                <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 700, color: (RESULT_META[r.Result] || DEFAULT_META).color }}>
+                                                    {r.Value || '—'}
+                                                </TableCell>
+                                                <TableCell sx={{ fontSize: '0.75rem', color: '#64748b' }}>{r.Unit || '—'}</TableCell>
+                                                <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b' }}>
+                                                    {r.Time ? new Date(r.Time).toLocaleString() : '—'}
+                                                </TableCell>
+                                            </TableRow>
+                                            {hasPlot && <ResultPlot show plotData={r.PlotData} />}
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </div>
+            )}
+
+            {/* Empty states */}
+            {selectedTests.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-16 space-y-2">
+                    <p className="text-sm" style={{ color: '#475569' }}>Select at least one test to query results</p>
+                </div>
+            )}
+            {selectedTests.length > 0 && testResults.length === 0 && !loading && (
+                <div className="flex flex-col items-center justify-center py-16 space-y-2">
+                    <p className="text-sm" style={{ color: '#475569' }}>No results match the selected filters</p>
+                </div>
+            )}
         </main>
     );
 }
