@@ -1,5 +1,6 @@
 import sqlite3
 import pyjson5 as json
+from contextlib import contextmanager
 from typing import List, Dict, Any
 from .base import DatabaseInterface
 from ..TestResult import TestResult
@@ -27,9 +28,17 @@ class SQLiteDatabase(DatabaseInterface):
         self.db_file = config_string
         self._init_tables()
 
+    @contextmanager
+    def _connect(self):
+        con = sqlite3.connect(self.db_file)
+        try:
+            yield con
+        finally:
+            con.close()
+
     def _init_tables(self):
         """Initialize database tables."""
-        with sqlite3.connect(self.db_file) as con:
+        with self._connect() as con:
             cursor = con.cursor()
 
             # Create runs table
@@ -61,11 +70,11 @@ class SQLiteDatabase(DatabaseInterface):
 
     def create_run(self, run: TestRun) -> int:
         """Create a new test run and return the run ID."""
-        with sqlite3.connect(self.db_file) as con:
+        with self._connect() as con:
             cursor = con.cursor()
             entities = (run.tester, run.tester_ver, run.dut, run.dut_desc, run.dut_product_id,
-                       run.dut_image, run.program, run.program_desc, run.start_date,
-                       run.end_date, str(run.result), json.dumps(run.log), run.attachment.getvalue(),
+                       run.dut_image, run.program, run.program_desc, str(run.start_date),
+                       str(run.end_date), str(run.result), json.dumps(run.log), run.attachment.getvalue(),
                        int(getattr(run, 'program_modified', False)), json.dumps(getattr(run, 'program_attr', {})))
             cursor.execute(f'INSERT INTO {self.RUNS_TABLE}({self.RUNS_COLS}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', entities)
             run_id = cursor.lastrowid
@@ -74,18 +83,18 @@ class SQLiteDatabase(DatabaseInterface):
 
     def update_run_end(self, run: TestRun) -> None:
         """Update the end time and result of a test run."""
-        with sqlite3.connect(self.db_file) as con:
+        with self._connect() as con:
             cursor = con.cursor()
             cursor.execute(f'UPDATE {self.RUNS_TABLE} SET end_date = ?, result = ?, log = ?, attachment = ?, program_modified = ? WHERE run_id = ?',
-                          (run.end_date, str(run.result), json.dumps(run.log), run.attachment.getvalue(),
+                          (str(run.end_date), str(run.result), json.dumps(run.log), run.attachment.getvalue(),
                            int(getattr(run, 'program_modified', False)), run.run_id))
             con.commit()
 
     def append_result(self, result: TestResult, run_id: int) -> None:
         """Append a test result to a specific run."""
-        with sqlite3.connect(self.db_file) as con:
+        with self._connect() as con:
             cursor = con.cursor()
-            entities = (run_id, result.date, result.suite, result.name, json.dumps(result.tolerance),
+            entities = (run_id, str(result.date), result.suite, result.name, json.dumps(result.tolerance),
                        str(result.value), result.unit, str(result.result), result.comment,
                        result.infoonly, result.skip, str(result.attr), result.result_type,
                        getattr(result, 'role', 'testcase'))
@@ -94,7 +103,7 @@ class SQLiteDatabase(DatabaseInterface):
 
     def get_run(self, run_id: int) -> TestRun:
         """Get a complete test run with all its results."""
-        with sqlite3.connect(self.db_file) as con:
+        with self._connect() as con:
             cursor = con.cursor()
             cursor.execute(f'SELECT {self.RUNS_COLS} FROM {self.RUNS_TABLE} WHERE run_id = {run_id}')
             run = cursor.fetchone()
@@ -127,7 +136,7 @@ class SQLiteDatabase(DatabaseInterface):
 
     def get_runs(self) -> str:
         """Get all test runs as JSON string."""
-        with sqlite3.connect(self.db_file) as con:
+        with self._connect() as con:
             cursor = con.cursor()
             cursor.execute(f'SELECT {self.RUNS_REPORT_COLS} FROM {self.RUNS_TABLE}')
             runs = cursor.fetchall()
@@ -141,7 +150,7 @@ class SQLiteDatabase(DatabaseInterface):
 
     def get_available_tests(self) -> list:
         """Get list of all unique test names, excluding setup and cleanup tests."""
-        with sqlite3.connect(self.db_file) as con:
+        with self._connect() as con:
             cursor = con.cursor()
             cursor.execute(f'''
                 SELECT DISTINCT name FROM {self.RESULT_TABLE}
@@ -153,7 +162,7 @@ class SQLiteDatabase(DatabaseInterface):
 
     def get_available_programs(self) -> list:
         """Get list of all unique program names."""
-        with sqlite3.connect(self.db_file) as con:
+        with self._connect() as con:
             cursor = con.cursor()
             cursor.execute(f'SELECT DISTINCT program FROM {self.RUNS_TABLE} ORDER BY program')
             programs = cursor.fetchall()
@@ -161,7 +170,7 @@ class SQLiteDatabase(DatabaseInterface):
 
     def get_available_duts(self) -> list:
         """Get list of all unique DUT names."""
-        with sqlite3.connect(self.db_file) as con:
+        with self._connect() as con:
             cursor = con.cursor()
             cursor.execute(f'SELECT DISTINCT dut FROM {self.RUNS_TABLE} ORDER BY dut')
             duts = cursor.fetchall()
@@ -169,12 +178,12 @@ class SQLiteDatabase(DatabaseInterface):
 
     def query_test_results(self, query_params: dict) -> list:
         """Query test results with filters."""
-        with sqlite3.connect(self.db_file) as con:
+        with self._connect() as con:
             cursor = con.cursor()
 
             # Build the query - join results with runs to get DUT and program info
             query = f'''
-                SELECT res.run_id, res.date, res.suite, res.name, res.tolerance, res.value, res.unit, res.result, res.comment, res.infoonly, res.skip, res.attr, res.result_type, r.dut, r.program
+                SELECT res.run_id, res.date, res.suite, res.name, res.tolerance, res.value, res.unit, res.result, res.comment, res.infoonly, res.skip, res.attr, res.result_type, res.role, r.dut, r.program
                 FROM {self.RESULT_TABLE} res
                 JOIN {self.RUNS_TABLE} r ON res.run_id = r.run_id
                 WHERE 1=1

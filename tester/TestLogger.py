@@ -35,6 +35,12 @@ class TestLogger(metaclass=Singleton):
     def critical(self, msg, *args, **kwargs):
         self._logger.critical(msg, *args, **kwargs)
 
+    def addHandler(self, handler):
+        self._logger.addHandler(handler)
+
+    def removeHandler(self, handler):
+        self._logger.removeHandler(handler)
+
     def start_run(self, entrylist: list):
         now = datetime.datetime.now()
         if self._dirname:

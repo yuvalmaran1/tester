@@ -21,13 +21,12 @@ setup(
     packages=find_packages(),
     install_requires=[
         'plotly>=5.17.0',
-        'dash>=2.14.0',
-        'dash-bootstrap-components>=1.5.0',
         'Flask>=3.0.0',
         'Flask_SocketIO>=5.3.6',
         'numpy',
         'pyjson5>=1.6.4',
-        'psycopg2-binary>=2.9.0'
+        'psycopg2-binary>=2.9.0',
+        'pydantic>=2.0.0'
     ],
     include_package_data=True,
     package_data={'': files}

@@ -1,5 +1,5 @@
 {
-    "python.defaultInterpreterPath": "./venv/Scripts/python.exe",
+    "python.defaultInterpreterPath": ".\\venv\\Scripts\\python.exe",
     "python.terminal.activateEnvironment": true,
     "python.linting.enabled": true,
     "python.linting.pylintEnabled": false,
@@ -101,5 +101,10 @@
             "args": [],
             "icon": "terminal-cmd"
         }
-    }
+    },
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 }
