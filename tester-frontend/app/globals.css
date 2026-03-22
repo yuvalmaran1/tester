@@ -1,348 +1,149 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* CSS Variables for consistent theming - subdued colors */
 :root {
-    --tester-primary: #475569;
-    --tester-secondary: #64748b;
-    --tester-accent: #64748b;
-    --tester-success: #22c55e;
-    --tester-warning: #f59e0b;
-    --tester-danger: #ef4444;
-    --tester-info: #64748b;
-    --tester-light: #f1f5f9;
-    --tester-dark: #1e293b;
-    --tester-gray: #64748b;
-
-    /* Subdued gradient definitions */
-    --gradient-primary: linear-gradient(135deg, #475569 0%, #334155 100%);
-    --gradient-secondary: linear-gradient(135deg, #64748b 0%, #475569 100%);
-    --gradient-accent: linear-gradient(135deg, #64748b 0%, #475569 100%);
-    --gradient-success: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-    --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    --gradient-card: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
-    --gradient-background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    --bg-base:     #0d1117;
+    --bg-card:     #161b2e;
+    --bg-elevated: #1e2640;
+    --border:      #2d3748;
+    --text-primary:   #e2e8f0;
+    --text-secondary: #8b9eb0;
+    --accent:      #6366f1;
+    --accent-hover:#818cf8;
+    --pass:   #10b981;
+    --fail:   #ef4444;
+    --error:  #f59e0b;
+    --skip:   #64748b;
+    --abort:  #8b5cf6;
+    --running:#3b82f6;
 }
 
-/* Base styles with modern typography */
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
-body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--gradient-background);
-    color: var(--tester-dark);
+html, body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     line-height: 1.6;
     margin: 0;
     padding: 0;
     min-height: 100vh;
-    position: relative;
 }
 
-/* Typography hierarchy */
-h1 {
-    @apply font-bold text-primary-800 text-4xl leading-tight;
-    font-weight: 700;
-    letter-spacing: -0.025em;
-}
-
-h2 {
-    @apply font-semibold text-primary-700 text-2xl leading-tight;
-    font-weight: 600;
-    letter-spacing: -0.025em;
-}
-
-h3 {
-    @apply font-semibold text-gray-800 text-xl leading-tight;
-    font-weight: 600;
-}
-
-h4 {
-    @apply font-medium text-gray-700 text-lg leading-tight;
-    font-weight: 500;
-}
-
-/* Main layout */
-main {
-    @apply max-w-7xl mx-auto px-6 py-8;
-    min-height: calc(100vh - 80px);
-}
-
-/* Links */
-a {
-    @apply text-primary-600 hover:text-primary-700 transition-colors duration-200;
-    text-decoration: none;
-}
-
-a:hover {
-    text-decoration: underline;
-}
-
-/* Navigation styles */
-nav {
-    @apply bg-white shadow-soft border-b border-gray-200;
-    backdrop-filter: blur(10px);
-    position: sticky;
-    top: 0;
-    z-index: 50;
-}
-
-nav a,
-nav span {
-    @apply text-gray-600 hover:text-primary-600 transition-colors duration-200;
-    font-weight: 500;
-}
-
-/* Subdued card styles */
+/* ── Cards ── */
 .card {
-    @apply rounded-xl p-6 transition-all duration-300;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
-    position: relative;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
 }
 
-.card:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+/* ── Status badges ── */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
 }
+.badge-pass   { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+.badge-fail   { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.3);  }
+.badge-error  { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+.badge-skip   { background: rgba(100,116,139,0.15);color: #94a3b8; border: 1px solid rgba(100,116,139,0.3);}
+.badge-abort  { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+.badge-unknown{ background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
 
-.card h3 {
-    @apply font-semibold text-gray-800 text-lg mb-3;
-}
-
-.card p {
-    @apply text-gray-600 leading-relaxed;
-}
-
-/* Professional button styles */
-.MuiButton-root {
-    @apply px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200;
-}
-
-.MuiButton-contained {
-    background: var(--tester-primary);
-    color: white;
-    border: none;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.MuiButton-contained:hover {
-    background: #4f46e5;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.MuiButton-outlined {
-    border: 1px solid var(--tester-primary);
-    color: var(--tester-primary);
-    background: white;
-}
-
-.MuiButton-outlined:hover {
-    background: rgba(99, 102, 241, 0.04);
-    border-color: #4f46e5;
-}
-
-.MuiButton-text {
-    color: var(--tester-primary);
-    background: transparent;
-}
-
-.MuiButton-text:hover {
-    background: rgba(99, 102, 241, 0.04);
-}
-
-/* Floating action button */
-.MuiFab-root {
-    background: var(--tester-primary);
-    color: white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-    border: none;
-}
-
-.MuiFab-root:hover {
-    background: #4f46e5;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-/* Progress bar styling */
-.MuiLinearProgress-root {
-    background: #e2e8f0;
-    border-radius: 6px;
-    height: 8px;
-    overflow: hidden;
-}
-
-.MuiLinearProgress-bar {
-    background: var(--tester-primary);
-    border-radius: 6px;
-}
-
-/* Table enhancements */
-.MuiTableContainer-root {
-    @apply bg-white rounded-xl shadow-soft border border-gray-100 overflow-hidden;
-}
-
-.MuiTableHead-root {
-    @apply bg-gray-50;
-}
-
+/* ── MUI dark overrides ── */
+.MuiPaper-root { background-color: var(--bg-card) !important; }
+.MuiTableContainer-root { background-color: var(--bg-card) !important; }
 .MuiTableHead-root .MuiTableCell-root {
-    @apply font-semibold text-gray-700 border-b-2 border-gray-200;
+    background-color: var(--bg-elevated) !important;
+    color: var(--text-secondary) !important;
+    border-bottom: 1px solid var(--border) !important;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
-
 .MuiTableBody-root .MuiTableCell-root {
-    @apply border-b border-gray-100;
+    border-bottom: 1px solid rgba(45,55,72,0.6) !important;
+    color: var(--text-primary) !important;
+}
+.MuiTableRow-root:hover { background-color: rgba(99,102,241,0.05) !important; }
+
+.MuiSelect-root, .MuiOutlinedInput-root {
+    background-color: var(--bg-elevated) !important;
+    color: var(--text-primary) !important;
+    border-radius: 8px !important;
+}
+.MuiOutlinedInput-notchedOutline { border-color: var(--border) !important; }
+.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+    border-color: var(--accent) !important;
+}
+.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+    border-color: var(--accent) !important;
+}
+.MuiMenuItem-root { color: var(--text-primary) !important; }
+.MuiMenuItem-root:hover { background-color: rgba(99,102,241,0.12) !important; }
+.MuiInputLabel-root { color: var(--text-secondary) !important; }
+.MuiInputLabel-root.Mui-focused { color: var(--accent) !important; }
+.MuiSelect-icon { color: var(--text-secondary) !important; }
+
+.MuiCheckbox-root { color: var(--text-secondary) !important; }
+.MuiCheckbox-root.Mui-checked { color: var(--pass) !important; }
+
+.MuiLinearProgress-root { background-color: var(--border) !important; border-radius: 4px; }
+.MuiLinearProgress-bar  { background-color: var(--accent) !important; border-radius: 4px; }
+
+.MuiTooltip-tooltip {
+    background-color: var(--bg-elevated) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+    font-size: 0.75rem !important;
 }
 
-.MuiTableRow-root:hover {
-    @apply bg-gray-50;
+.MuiChip-root {
+    border-radius: 4px !important;
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em !important;
 }
 
-/* Form controls */
-.MuiFormControl-root {
-    @apply w-full;
+.MuiTextField-root input, .MuiTextField-root textarea {
+    color: var(--text-primary) !important;
 }
 
-.MuiInputLabel-root {
-    @apply text-gray-700 font-medium;
-}
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-.MuiSelect-root {
-    @apply bg-white rounded-lg;
-}
-
-.MuiMenuItem-root {
-    @apply hover:bg-primary-50;
-}
-
-/* Status indicators */
-.status-pass {
-    @apply bg-success-100 text-success-800 px-3 py-1 rounded-full text-xs font-semibold;
-}
-
-.status-fail {
-    @apply bg-danger-100 text-danger-800 px-3 py-1 rounded-full text-xs font-semibold;
-}
-
-.status-error {
-    @apply bg-warning-100 text-warning-800 px-3 py-1 rounded-full text-xs font-semibold;
-}
-
-.status-skip {
-    @apply bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs font-semibold;
-}
-
-/* Animations */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
+/* ── Animations ── */
 @keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateX(-20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0);    }
 }
-
-@keyframes float {
-
-    0%,
-    100% {
-        transform: translateY(0px);
-    }
-
-    50% {
-        transform: translateY(-10px);
-    }
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
-
-@keyframes glow {
-
-    0%,
-    100% {
-        box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
-    }
-
-    50% {
-        box-shadow: 0 0 30px rgba(99, 102, 241, 0.6);
-    }
-}
-
 @keyframes pulse {
-
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.7;
-    }
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.6; }
 }
 
-.animate-fade-in {
-    animation: fadeIn 0.6s ease-out;
-}
+.animate-slide-in  { animation: slideIn 0.25s ease-out; }
+.animate-fade-in   { animation: fadeIn  0.3s  ease-out; }
+.animate-pulse-slow{ animation: pulse   2s    ease-in-out infinite; }
 
-.animate-slide-in {
-    animation: slideIn 0.4s ease-out;
-}
-
-.animate-float {
-    animation: float 3s ease-in-out infinite;
-}
-
-.animate-glow {
-    animation: glow 2s ease-in-out infinite;
-}
-
-.animate-pulse-slow {
-    animation: pulse 2s ease-in-out infinite;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-    main {
-        @apply px-4 py-6;
-    }
-
-    h1 {
-        @apply text-3xl;
-    }
-
-    h2 {
-        @apply text-xl;
-    }
-
-    .card {
-        @apply p-4;
-    }
-}
-
-/* Dark mode support (for future) */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --tester-light: #0f172a;
-        --tester-dark: #f8fafc;
-    }
-}
+/* ── Links ── */
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-hover); }

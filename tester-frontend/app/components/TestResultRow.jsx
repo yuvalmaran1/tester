@@ -1,195 +1,155 @@
-import {
-    Checkbox,
-    TableCell,
-    TableRow,
-    Tooltip
-} from '@mui/material';
-import _ from "lodash";
+import { Checkbox, TableCell, TableRow, Tooltip } from '@mui/material';
+import _ from 'lodash';
 import * as React from 'react';
 import ResultPlot from './ResultPlot';
 
-export default function TestResultRow(props) {
-    const { row, active, testCases = [], onExecuteChange, disabled = false } = props;
+const RESULT_META = {
+    PASS:     { color: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.4)',  label: 'PASS'    },
+    FAIL:     { color: '#ef4444', bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.4)',   label: 'FAIL'    },
+    ERROR:    { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.4)',  label: 'ERROR'   },
+    INFOONLY: { color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  border: 'rgba(96,165,250,0.4)',  label: 'INFO'    },
+    SKIPPED:  { color: '#64748b', bg: 'rgba(100,116,139,0.1)',  border: 'rgba(100,116,139,0.3)', label: 'SKIP'    },
+    ABORTED:  { color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.4)', label: 'ABORT'   },
+};
+const DEFAULT_META = { color: '#8b9eb0', bg: 'rgba(139,158,176,0.08)', border: 'rgba(139,158,176,0.2)', label: '—' };
+
+export default function TestResultRow({ row, active, testCases = [], onExecuteChange, disabled = false }) {
     const [showPlot, setShowPlot] = React.useState(false);
-    const [resStyle, setResStyle] = React.useState({});
     const [plotData, setPlotData] = React.useState({});
-    React.useEffect(() => evalResultColor(row), [row]);
-    React.useEffect(() => scrollHandler(active, myRef), [active]);
     const myRef = React.useRef(null);
 
-    const scrollHandler = (a, ref) => {
-        if ((a === true) && (ref) && (ref.current)) {
-            ref.current.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-        }
-    };
+    React.useEffect(() => {
+        const pd = _.get(row, 'PlotData', {});
+        setPlotData(pd);
+        setShowPlot(Object.keys(pd).length > 0);
+    }, [row]);
 
-    // Find the corresponding test case for this result row
-    const findTestCase = () => {
+    React.useEffect(() => {
+        if (active && myRef.current) {
+            myRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, [active]);
+
+    const result   = _.get(row, 'Result', '');
+    const meta     = RESULT_META[result] || DEFAULT_META;
+
+    // Find matching test case
+    const testCase = React.useMemo(() => {
         const suite = _.get(row, 'Suite', '');
-        const name = _.get(row, 'Name', '');
-
-        // Try to find exact match first
-        let testCase = testCases.find(tc => tc.suite === suite && tc.name === name);
-
-        // If not found, try to match by suite and type
-        if (!testCase) {
-            // Determine type based on name patterns or other logic
-            let type = 'testcase'; // default
-            if (name.toLowerCase().includes('setup')) {
-                type = 'setup';
-            } else if (name.toLowerCase().includes('cleanup')) {
-                type = 'cleanup';
-            }
-
-            testCase = testCases.find(tc => tc.suite === suite && tc.type === type);
+        const name  = _.get(row, 'Name',  '');
+        let tc = testCases.find(t => t.suite === suite && t.name === name);
+        if (!tc) {
+            const type = name.toLowerCase().includes('setup') ? 'setup'
+                       : name.toLowerCase().includes('cleanup') ? 'cleanup'
+                       : 'testcase';
+            tc = testCases.find(t => t.suite === suite && t.type === type);
         }
+        return tc;
+    }, [row, testCases]);
 
-        return testCase;
-    };
-
-    const testCase = findTestCase();
-
-    // Check if the suite is unchecked (either setup OR cleanup is unchecked)
-    // But don't dim the setup/cleanup tests themselves - they control the suite
-    const isSuiteUnchecked = () => {
+    const suiteUnchecked = React.useMemo(() => {
         if (!testCase || testCase.type === 'setup' || testCase.type === 'cleanup') return false;
-        const suite = testCase.suite;
-        const setupTestCase = testCases.find(tc => tc.suite === suite && tc.type === 'setup');
-        const cleanupTestCase = testCases.find(tc => tc.suite === suite && tc.type === 'cleanup');
-
-        // Suite is unchecked if either setup OR cleanup is unchecked
-        const setupUnchecked = setupTestCase && !setupTestCase.execute;
-        const cleanupUnchecked = cleanupTestCase && !cleanupTestCase.execute;
-
-        return setupUnchecked || cleanupUnchecked;
-    };
-
-    const suiteUnchecked = isSuiteUnchecked();
+        const suite   = testCase.suite;
+        const setup   = testCases.find(t => t.suite === suite && t.type === 'setup');
+        const cleanup = testCases.find(t => t.suite === suite && t.type === 'cleanup');
+        return (setup && !setup.execute) || (cleanup && !cleanup.execute);
+    }, [testCase, testCases]);
 
     const handleExecuteChange = (checked) => {
         if (testCase && onExecuteChange) {
-            onExecuteChange({
-                test_id: testCase.id,
-                execute: checked,
-                type: testCase.type,
-                suite: testCase.suite,
-                name: testCase.name
-            });
+            onExecuteChange({ test_id: testCase.id, execute: checked, type: testCase.type, suite: testCase.suite, name: testCase.name });
         }
     };
 
-    const evalResultColor = (r) => {
-        let res = _.get(r, 'Result', 'UNKNOWN');
-        let plotData = _.get(r, 'PlotData', {});
-        let style = {};
-        switch (res) {
-            case 'PASS':
-                style = { color: '#10b981', fontWeight: '600' };
-                break;
-            case 'FAIL':
-                style = { color: '#ef4444', fontWeight: '600' };
-                break;
-            case 'ERROR':
-                style = { color: '#f59e0b', fontWeight: '600' };
-                break;
-            case 'INFOONLY':
-                style = { color: '#3b82f6', fontWeight: '600' };
-                break;
-            case 'SKIPPED':
-                style = { color: '#64748b', fontWeight: '600' };
-                break;
-            case 'ABORTED':
-                style = { color: '#8b5cf6', fontWeight: '600' };
-                break;
-        }
-
-        setResStyle(style);
-        setPlotData(plotData);
-        setShowPlot(Object.keys(plotData).length != 0);
-    };
+    const rowBg = active ? 'rgba(99,102,241,0.08)' : 'transparent';
 
     return (
         <React.Fragment>
             <TableRow
                 ref={myRef}
+                className="animate-slide-in"
                 sx={{
-                    '& > *': { borderBottom: '1px solid #f1f5f9' },
-                    backgroundColor: active ? '#eff6ff' : 'transparent',
-                    '&:hover': {
-                        backgroundColor: active ? '#dbeafe' : '#f8fafc'
-                    },
-                    transition: 'background-color 0.2s ease'
+                    backgroundColor: rowBg,
+                    borderLeft: active ? '2px solid #6366f1' : `2px solid ${result ? meta.border : 'transparent'}`,
+                    '&:hover': { backgroundColor: active ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.03)' },
+                    transition: 'background-color 0.15s ease',
+                    '& td': { borderBottom: '1px solid rgba(45,55,72,0.5)' },
                 }}
-                selected={active}
             >
-                <TableCell align="center" sx={{
-                    width: '80px',
-                    opacity: (disabled || suiteUnchecked) ? 0.6 : 1
-                }}>
+                {/* Execute checkbox */}
+                <TableCell align="center" sx={{ width: 64, opacity: (disabled || suiteUnchecked) ? 0.4 : 1 }}>
                     {testCase ? (
-                        <Tooltip
-                            title={
-                                disabled ? "Cannot change while test is running" :
-                                    suiteUnchecked ? "Test skipped because suite setup or cleanup is disabled" :
-                                        testCase.execute ? "Click to skip this test" : "Click to execute this test"
-                            }
-                        >
+                        <Tooltip title={
+                            disabled       ? 'Cannot change while running' :
+                            suiteUnchecked ? 'Suite disabled' :
+                            testCase.execute ? 'Skip this test' : 'Enable this test'
+                        }>
                             <Checkbox
+                                size="small"
                                 checked={testCase.execute && !suiteUnchecked}
                                 onChange={(e) => handleExecuteChange(e.target.checked)}
                                 disabled={disabled || suiteUnchecked}
-                                sx={{
-                                    color: '#10b981',
-                                    '&.Mui-checked': {
-                                        color: '#10b981',
-                                    },
-                                    '&.Mui-disabled': {
-                                        opacity: 0.5,
-                                    }
-                                }}
                             />
                         </Tooltip>
                     ) : (
-                        <span style={{ color: '#64748b', fontSize: '0.75rem' }}>-</span>
+                        <span style={{ color: '#334155' }}>—</span>
                     )}
                 </TableCell>
-                <TableCell align="left" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
-                    {_.get(row, 'Time', '00:00:00')}
+
+                {/* Time */}
+                <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b', width: 72 }}>
+                    {_.get(row, 'Time', '—')}
                 </TableCell>
-                <TableCell align="left" sx={{ fontWeight: 500 }}>
-                    {_.get(row, 'Suite', 'undefined')}
+
+                {/* Suite */}
+                <TableCell sx={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 500 }}>
+                    {_.get(row, 'Suite', '')}
                 </TableCell>
-                <TableCell align="left" sx={{ fontWeight: 500 }}>
-                    {_.get(row, 'Name', 'unnamed')}
+
+                {/* Test name */}
+                <TableCell sx={{ fontSize: '0.85rem', fontWeight: 600, color: active ? '#c7d2fe' : '#e2e8f0' }}>
+                    {_.get(row, 'Name', '—')}
+                    {active && (
+                        <span className="ml-2 inline-block w-1.5 h-1.5 rounded-full animate-pulse-slow"
+                            style={{ backgroundColor: '#6366f1', verticalAlign: 'middle' }} />
+                    )}
                 </TableCell>
-                <TableCell sx={{ wordBreak: "break-all", fontFamily: 'monospace' }} align="center">
+
+                {/* Min / Value / Max */}
+                <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b', width: 80 }}>
                     {_.get(row, 'Min', '')}
                 </TableCell>
-                <TableCell sx={{ wordBreak: "break-all", fontFamily: 'monospace', fontWeight: 600 }} align="center">
+                <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 700, color: meta.color || '#e2e8f0', width: 80 }}>
                     {_.get(row, 'Value', '')}
                 </TableCell>
-                <TableCell sx={{ wordBreak: "break-all", fontFamily: 'monospace' }} align="center">
+                <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b', width: 80 }}>
                     {_.get(row, 'Max', '')}
                 </TableCell>
-                <TableCell align="center" sx={{ fontSize: '0.875rem', color: '#64748b' }}>
+
+                {/* Unit */}
+                <TableCell align="center" sx={{ fontSize: '0.75rem', color: '#64748b', width: 80 }}>
                     {_.get(row, 'Unit', '')}
                 </TableCell>
-                <TableCell align="center">
-                    <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${_.get(row, 'Result', '') === 'PASS' ? 'bg-success-100 text-success-800' :
-                            _.get(row, 'Result', '') === 'FAIL' ? 'bg-danger-100 text-danger-800' :
-                                _.get(row, 'Result', '') === 'ERROR' ? 'bg-warning-100 text-warning-800' :
-                                    _.get(row, 'Result', '') === 'SKIPPED' ? 'bg-gray-100 text-gray-800' :
-                                        'bg-primary-100 text-primary-800'
-                            }`}
-                    >
-                        {_.get(row, 'Result', '')}
-                    </span>
+
+                {/* Result badge */}
+                <TableCell align="center" sx={{ width: 96 }}>
+                    {result && (
+                        <span className="badge" style={{
+                            backgroundColor: meta.bg,
+                            color:           meta.color,
+                            border:          `1px solid ${meta.border}`,
+                        }}>
+                            {meta.label}
+                        </span>
+                    )}
                 </TableCell>
-                <TableCell align="left" sx={{ fontSize: '0.875rem', color: '#64748b' }}>
+
+                {/* Comment */}
+                <TableCell sx={{ fontSize: '0.75rem', color: '#64748b' }}>
                     {_.get(row, 'Comment', '')}
                 </TableCell>
             </TableRow>
+
             <ResultPlot plotData={plotData} show={showPlot} />
         </React.Fragment>
     );
