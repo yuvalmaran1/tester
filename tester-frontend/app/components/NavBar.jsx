@@ -1,7 +1,9 @@
 'use client';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useConnection } from '../contexts/ConnectionContext';
+import { socket } from '../socket';
 
 const NAV = [
     {
@@ -39,6 +41,18 @@ const NAV = [
 export default function Sidebar() {
     const pathname = usePathname();
     const { connected, connecting } = useConnection();
+    const [testerName, setTesterName] = useState('');
+
+    useEffect(() => {
+        const onTester = (data) => { if (data?.name) setTesterName(data.name); };
+        const onState  = (data) => { if (data?.tester?.name) setTesterName(data.tester.name); };
+        socket.on('tester', onTester);
+        socket.on('state',  onState);
+        return () => {
+            socket.off('tester', onTester);
+            socket.off('state',  onState);
+        };
+    }, []);
 
     return (
         <aside
@@ -49,12 +63,27 @@ export default function Sidebar() {
                 borderRight: '1px solid #2d3748',
             }}
         >
-            {/* Logo */}
-            <div className="flex items-center gap-3 px-5 py-5" style={{ borderBottom: '1px solid #2d3748' }}>
-                <img src="/icon.svg" alt="logo" className="w-8 h-8 shrink-0" />
-                <span className="font-semibold text-sm tracking-tight" style={{ color: '#e2e8f0' }}>
-                    HiL Framework
-                </span>
+            {/* Brand */}
+            <div style={{ borderBottom: '1px solid #2d3748', padding: '1rem 1.25rem' }}>
+                <div className="flex items-center gap-3">
+                    <img src="/icon.svg" alt="logo" style={{ width: '34px', height: '34px', flexShrink: 0 }} />
+                    <div style={{ minWidth: 0 }}>
+                        <div style={{
+                            color: '#e2e8f0', fontWeight: 700, fontSize: '0.875rem',
+                            lineHeight: 1.25, overflow: 'hidden',
+                            textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                            {testerName || 'HiL Framework'}
+                        </div>
+                        <div style={{
+                            color: '#6366f1', fontSize: '0.6875rem', fontWeight: 600,
+                            textTransform: 'uppercase', letterSpacing: '0.07em',
+                            marginTop: '2px',
+                        }}>
+                            Test Framework
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Nav links */}
