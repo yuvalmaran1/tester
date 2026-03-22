@@ -2,6 +2,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import Sidebar from './components/NavBar';
 import Providers from './components/Providers';
+import TitleSync from './components/TitleSync';
 import { ConnectionProvider } from './contexts/ConnectionContext';
 
 const inter = Inter({
@@ -11,13 +12,9 @@ const inter = Inter({
 });
 
 export const metadata = {
-    title: 'Test Framework',
+    title: 'HiL Framework',
     description: 'HiL Testing Framework',
-    icons: {
-        icon: '/icon.svg',
-        shortcut: '/icon.svg',
-        apple: '/icon.svg',
-    },
+    icons: { icon: '/icon.svg' },
 };
 
 export default function RootLayout({ children }) {
@@ -26,6 +23,7 @@ export default function RootLayout({ children }) {
             <body className={inter.className} style={{ backgroundColor: '#0d1117' }}>
                 <Providers>
                     <ConnectionProvider>
+                        <TitleSync />
                         <div className="flex h-screen overflow-hidden">
                             <Sidebar />
                             <div className="flex-1 overflow-y-auto min-w-0">

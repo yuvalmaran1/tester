@@ -1,7 +1,6 @@
-import DownloadIcon from '@mui/icons-material/Download';
+'use client';
 import { TableCell, TableRow } from '@mui/material';
 import _ from 'lodash';
-import Link from 'next/link';
 
 const RESULT_META = {
     PASS:    { color: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.3)'  },
@@ -43,32 +42,34 @@ export default function TestRunRow({ row }) {
                     style={{ color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}
                     title="Download report"
                 >
-                    <DownloadIcon sx={{ fontSize: 14 }} />
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M5 20h14v-2H5zM19 9h-4V3H9v6H5l7 7z"/>
+                        </svg>
                 </a>
             </TableCell>
 
             {/* Run ID */}
             <TableCell align="center" sx={{ width: 72 }}>
-                <Link href={`/show_report/${runId}`}
+                <a href={`/show_report/${runId}`}
                     style={{ color: '#818cf8', fontFamily: 'monospace', fontWeight: 700, fontSize: '0.8rem' }}>
                     #{runId}
-                </Link>
+                </a>
             </TableCell>
 
             {/* DUT */}
             <TableCell>
-                <Link href={`/show_report/${runId}`}
+                <a href={`/show_report/${runId}`}
                     style={{ color: '#e2e8f0', fontWeight: 500, fontSize: '0.875rem' }}>
                     {_.get(row, 'dut', '')}
-                </Link>
+                </a>
             </TableCell>
 
             {/* Program */}
             <TableCell>
-                <Link href={`/show_report/${runId}`}
+                <a href={`/show_report/${runId}`}
                     style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
                     {_.get(row, 'program', '')}
-                </Link>
+                </a>
             </TableCell>
 
             {/* Start date */}

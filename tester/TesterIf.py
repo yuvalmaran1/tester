@@ -130,7 +130,7 @@ class TesterIf:
         return render_template("test-query.html")
 
     def favicon_handler(self):
-        return send_from_directory(FRONTEND_BUILD_PATH, 'favicon.ico')
+        return send_from_directory(FRONTEND_BUILD_PATH, 'icon.svg', mimetype='image/svg+xml')
 
     def manifest_handler(self):
         return send_from_directory(FRONTEND_BUILD_PATH, 'build-manifest.json')
