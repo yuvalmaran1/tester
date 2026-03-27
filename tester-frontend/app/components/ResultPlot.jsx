@@ -35,7 +35,7 @@ export default function ResultPlot(props) {
                                 data={points}
                                 margin={{ top: 20, right: 120, left: 60, bottom: 60 }}
                             >
-                                <CartesianGrid strokeDasharray="3 3" />
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
                                 <XAxis
                                     type="number"
                                     dataKey="x"
@@ -44,17 +44,23 @@ export default function ResultPlot(props) {
                                         value: _.get(plotData, 'xlabel', 'X'),
                                         position: 'insideBottom',
                                         offset: -10,
-                                        style: { textAnchor: 'middle' }
+                                        style: { textAnchor: 'middle', fill: '#94a3b8' }
                                     }}
                                     tickFormatter={(value) => value.toFixed(2)}
+                                    tick={{ fill: '#64748b', fontSize: 12 }}
+                                    axisLine={{ stroke: '#334155' }}
+                                    tickLine={{ stroke: '#334155' }}
                                 />
                                 <YAxis
                                     label={{
                                         value: _.get(plotData, 'ylabel', 'Y'),
                                         angle: -90,
                                         position: 'insideLeft',
-                                        style: { textAnchor: 'middle' }
+                                        style: { textAnchor: 'middle', fill: '#94a3b8' }
                                     }}
+                                    tick={{ fill: '#64748b', fontSize: 12 }}
+                                    axisLine={{ stroke: '#334155' }}
+                                    tickLine={{ stroke: '#334155' }}
                                 />
                                 <Tooltip
                                     formatter={(value, name) => [
@@ -64,17 +70,25 @@ export default function ResultPlot(props) {
                                                 name
                                     ]}
                                     labelFormatter={(value) => `${_.get(plotData, 'xlabel', 'X')}: ${value.toFixed(3)}`}
+                                    contentStyle={{
+                                        backgroundColor: '#1e293b',
+                                        border: '1px solid #334155',
+                                        borderRadius: '8px',
+                                        color: '#e2e8f0',
+                                    }}
+                                    labelStyle={{ color: '#94a3b8', marginBottom: 4 }}
+                                    itemStyle={{ color: '#e2e8f0' }}
                                 />
                                 <Legend
                                     verticalAlign="middle"
                                     align="right"
                                     layout="vertical"
-                                    wrapperStyle={{ paddingLeft: '20px' }}
+                                    wrapperStyle={{ paddingLeft: '20px', color: '#94a3b8' }}
                                 />
                                 <Line
                                     type="monotone"
                                     dataKey="min"
-                                    stroke="blue"
+                                    stroke="#60a5fa"
                                     strokeDasharray="5 5"
                                     name="Min Tolerance"
                                     dot={false}
@@ -82,7 +96,7 @@ export default function ResultPlot(props) {
                                 <Line
                                     type="monotone"
                                     dataKey="value"
-                                    stroke="green"
+                                    stroke="#34d399"
                                     activeDot={{ r: 4 }}
                                     name="Measured"
                                     dot={{ r: 2 }}
@@ -90,7 +104,7 @@ export default function ResultPlot(props) {
                                 <Line
                                     type="monotone"
                                     dataKey="max"
-                                    stroke="red"
+                                    stroke="#f87171"
                                     strokeDasharray="5 5"
                                     name="Max Tolerance"
                                     dot={false}
