@@ -1,3 +1,4 @@
+'use client';
 import CloseIcon from '@mui/icons-material/Close';
 import { IconButton, Modal } from '@mui/material';
 import * as React from 'react';

@@ -1,3 +1,4 @@
+'use client';
 import { Checkbox, TableCell, TableRow, Tooltip } from '@mui/material';
 import _ from 'lodash';
 import * as React from 'react';
