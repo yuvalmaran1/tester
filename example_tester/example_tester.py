@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from tester import Tester
 from tester.TesterConfig import TesterConfig
 from tester.StationConfig import StationConfig
@@ -11,6 +13,17 @@ class ExampleStationConfig(StationConfig):
     """
     serial_port: str = "COM1"
     ip_address: str = "127.0.0.1"
+
+
+@dataclass
+class ExampleAssets:
+    """Hardware handles opened once at startup and shared across all test cases.
+
+    Add one field per instrument or connection. Type annotations enable
+    IDE auto-complete inside every _execute() that receives these assets.
+    """
+    # instrument: MyInstrument   # example — uncomment and replace
+    pass
 
 
 class ExampleTester(Tester):
@@ -29,10 +42,10 @@ class ExampleTester(Tester):
         )
         super().__init__(cfg)
 
-    def _init(self, station_config: ExampleStationConfig) -> dict:
-        # station_config is validated; access fields by name
-        # e.g. open serial port: serial.Serial(station_config.serial_port)
-        return {}
+    def _init(self, station_config: ExampleStationConfig) -> ExampleAssets:
+        # Open hardware connections here and store them as dataclass fields.
+        # e.g. return ExampleAssets(instrument=MyInstrument(station_config.serial_port))
+        return ExampleAssets()
 
 
 if __name__ == '__main__':

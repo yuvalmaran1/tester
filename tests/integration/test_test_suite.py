@@ -85,15 +85,15 @@ def test_suite_without_setup_cleanup():
 def test_setup_correct_class_loaded():
     """Executing the setup must return PASS (FastSetupTest behaviour)."""
     ts = _suite(SUITE_FULL)
-    ts.setup.execute()
+    ts.setup.execute({})
     assert ts.setup.result.result == E.PASS
 
 
 def test_testcase_classes_loaded():
     """First TC is FastPassTest → PASS; second is FastFailTest → FAIL."""
     ts = _suite(SUITE_FULL)
-    ts.testcases[0].execute()
-    ts.testcases[1].execute()
+    ts.testcases[0].execute({})
+    ts.testcases[1].execute({})
     assert ts.testcases[0].result.result == E.PASS
     assert ts.testcases[1].result.result == E.FAIL
 
