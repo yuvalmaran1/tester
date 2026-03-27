@@ -9,7 +9,7 @@ from tester.TestResult import TestResult
 
 from conftest import (
     DUTS_STANDARD, DUTS_DUT_SETUP_FAIL, DUTS_SLOW, DUTS_ATTR_READ,
-    STATION_DATA,
+    DUTS_RUN_DATA, STATION_DATA,
 )
 
 E = TestResult.TestEval
@@ -359,3 +359,33 @@ def test_reload_handler_preserves_program_selection(make_tester):
     original_prog = t.active_program.name
     t._reload_handler()
     assert t.active_program.name == original_prog
+
+
+# ── run_data ──────────────────────────────────────────────────────────────────
+
+def test_run_data_flows_between_test_cases(make_tester):
+    """Value written to run_data by TC1 is visible to TC2 in the same run."""
+    t = make_tester(DUTS_RUN_DATA)
+    _run_and_wait(t)
+    r = _result_by_name(t, "Read Test")
+    assert r is not None
+    assert r.result == E.PASS   # value == 'hello' matches tolerance expected
+
+
+def test_run_data_is_none_after_run_completes(make_tester):
+    """run_data is set to None after the run ends (memory release)."""
+    t = make_tester(DUTS_RUN_DATA)
+    _run_and_wait(t)
+    assert t.run_data is None
+
+
+def test_run_data_is_isolated_between_runs(make_tester):
+    """Each run starts with a fresh empty dict; data from run 1 is gone in run 2."""
+    t = make_tester(DUTS_RUN_DATA)
+    _run_and_wait(t)
+    # Second run: run_data is freshly initialised — Write Test re-writes 'hello'
+    t.select_program(t.active_program.name)
+    _run_and_wait(t)
+    r = _result_by_name(t, "Read Test")
+    assert r is not None
+    assert r.result == E.PASS

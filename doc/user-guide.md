@@ -59,23 +59,44 @@ class MyTester(Tester):
         )
         super().__init__(cfg)
 
-    def _init(self, station_config: MyStationConfig) -> dict:
+    def _init(self, station_config: MyStationConfig) -> "MyAssets":
         """
         Called once at startup. Open hardware connections here.
-        Return a dict of objects that your test cases will need — the 'assets'.
+        Return an assets dataclass whose fields your test cases will receive.
         """
-        instrument = MyInstrument(station_config.serial_port)
-        power_supply = MyPowerSupply(station_config.ip_address)
-        return {
-            "instrument": instrument,
-            "psu": power_supply,
-        }
+        return MyAssets(
+            instrument=MyInstrument(station_config.serial_port),
+            psu=MyPowerSupply(station_config.ip_address),
+        )
 
 if __name__ == "__main__":
     MyTester()
 ```
 
-`_init()` receives the validated `StationConfig` subclass and must return a plain `dict`. That dict is passed to every test case as `assets`. Assets are shared across all test cases and all runs without re-initialisation.
+`_init()` receives the validated `StationConfig` subclass and returns the **assets** object. Assets are shared across all test cases and all runs without re-initialisation.
+
+### Assets dataclass
+
+Define assets as a `@dataclass` so that every `_execute()` implementation has IDE auto-complete and type-checking:
+
+```python
+from dataclasses import dataclass
+
+@dataclass
+class MyAssets:
+    instrument: MyInstrument
+    psu: MyPowerSupply
+```
+
+In every test case, annotate `assets` with this type:
+
+```python
+class SupplyVoltageTest(NumericTestCase):
+    def _execute(self, config: TestConfig, assets: MyAssets, run_data: dict) -> float:
+        return assets.psu.measure_3v3()   # full IDE auto-complete
+```
+
+The framework does not enforce the type — it passes whatever `_init()` returns — but using a dataclass makes errors obvious at development time.
 
 ### TesterConfig fields
 
@@ -114,10 +135,10 @@ Fields not present in the JSON file take their default values. Extra keys in the
 The validated config object is passed to `_init()` and its fields are accessed by name:
 
 ```python
-def _init(self, station_config: MyStationConfig) -> dict:
-    port = station_config.serial_port      # type: str
+def _init(self, station_config: MyStationConfig) -> MyAssets:
+    port = station_config.serial_port           # type: str
     offset = station_config.calibration_offset  # type: float
-    ...
+    return MyAssets(instrument=MyInstrument(port), ...)
 ```
 
 ---
@@ -131,21 +152,42 @@ from tester.TestResults.NumericTestResult import NumericTestCase
 from tester.TestConfig import TestConfig
 
 class SupplyVoltageTest(NumericTestCase):
-    def _execute(self, config: TestConfig, assets: dict) -> float:
+    def _execute(self, config: TestConfig, assets: MyAssets, run_data: dict) -> float:
         # config.tolerance   → {"min": 3.2, "max": 3.4}
         # config.attr        → merged attr dict (program + suite + test level)
         # config.name        → "3.3V Rail"
         # config.unit        → "V"
-        # assets             → whatever _init() returned
-        return assets["psu"].measure_3v3()
+        # assets             → typed dataclass from _init()
+        # run_data           → plain dict shared across all tests in this run
+        return assets.psu.measure_3v3()
 ```
 
 Rules:
 - Return the measured value. The framework calls `result.evaluate()` automatically.
 - Raise any exception to mark the test as **ERROR** (the exception message is stored as the comment).
 - Call `self.set_comment("note")` to attach a free-text comment to the result.
-- Call `self.assets["attachment"].attach_file(path)` to attach a file (see [Utilities](utilities.md)).
 - Raise `AbortRunException` (imported from `tester.TestUtil`) to stop the entire run gracefully.
+
+### run_data — sharing data between test cases
+
+`run_data` is a plain `dict` created empty at the start of every run and passed to every `_execute()`. Use it to pass data produced by one test to a subsequent test:
+
+```python
+class CaptureWaveformTest(PassFailTestCase):
+    def _execute(self, config, assets: MyAssets, run_data: dict) -> TestResult.TestEval:
+        run_data['waveform'] = assets.scope.capture()   # store for later
+        return TestResult.TestEval.PASS
+
+class AnalyseWaveformTest(NumericTestCase):
+    def _execute(self, config, assets: MyAssets, run_data: dict) -> float:
+        waveform = run_data['waveform']                  # read from earlier test
+        return waveform.peak_voltage()
+```
+
+Key properties of `run_data`:
+- **Fresh each run** — starts as `{}` at the beginning of every run, so data never leaks between runs.
+- **Destroyed after run** — set to `None` once the run completes, allowing large objects (waveforms, images) to be garbage-collected.
+- **Shared across all suites** — DUT setup, suite setup/cleanup, and DUT cleanup all see the same dict.
 
 ### Setup and cleanup test cases
 
@@ -156,14 +198,14 @@ from tester.TestResults.PassFailTestResult import PassFailTestCase
 from tester.TestResult import TestResult
 
 class PowerOnSetup(PassFailTestCase):
-    def _execute(self, config, assets) -> TestResult.TestEval:
-        if not assets["psu"].power_on():
+    def _execute(self, config, assets: MyAssets, run_data: dict) -> TestResult.TestEval:
+        if not assets.psu.power_on():
             return TestResult.TestEval.FAIL
         return TestResult.TestEval.PASS
 
 class PowerOffCleanup(PassFailTestCase):
-    def _execute(self, config, assets) -> TestResult.TestEval:
-        assets["psu"].power_off()
+    def _execute(self, config, assets: MyAssets, run_data: dict) -> TestResult.TestEval:
+        assets.psu.power_off()
         return TestResult.TestEval.PASS
 ```
 

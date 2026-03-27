@@ -14,28 +14,28 @@ class StringExampleTest(StringTestCase):
     '''
     Example string test case
     '''
-    def _execute(self, config: TestConfig, assets: dict) -> str:
+    def _execute(self, config: TestConfig, assets, run_data: dict) -> str:
         return "Hello, World!"
 
 class NumericExampleTest(NumericTestCase):
     '''
     Example numeric test case
     '''
-    def _execute(self, config: TestConfig, assets: dict) -> float:
+    def _execute(self, config: TestConfig, assets, run_data: dict) -> float:
         return 1.0
 
 class PassFailExampleTest(PassFailTestCase):
     '''
     Example pass fail test case
     '''
-    def _execute(self, config: TestConfig, assets: dict) -> TestResult.TestEval:
+    def _execute(self, config: TestConfig, assets, run_data: dict) -> TestResult.TestEval:
         return TestResult.TestEval.PASS
 
 class BoolExampleTest(BoolTestCase):
     '''
     Example bool test case
     '''
-    def _execute(self, config: TestConfig, assets: dict) -> bool:
+    def _execute(self, config: TestConfig, assets, run_data: dict) -> bool:
         self.set_comment("This is a test comment")
         return True
 
@@ -43,7 +43,7 @@ class Numeric2dExampleTest(Numeric2dTestCase):
     '''
     Example numeric 2d test case - generates a sine wave from 0 to 2π
     '''
-    def _execute(self, config: TestConfig, assets: dict) -> dict:
+    def _execute(self, config: TestConfig, assets, run_data: dict) -> dict:
         # Generate 100 points from 0 to 2π
         x = np.linspace(0, 2 * np.pi, 100)
         # Generate corresponding sine values
@@ -54,7 +54,7 @@ class Numeric2dExampleTest2(Numeric2dTestCase):
     '''
     Example numeric 2d test case - generates a cosine wave from 0 to 2π
     '''
-    def _execute(self, config: TestConfig, assets: dict) -> dict:
+    def _execute(self, config: TestConfig, assets, run_data: dict) -> dict:
         # Generate 100 points from 0 to 2π
         x = np.linspace(0, 2 * np.pi, 100)
         # Generate corresponding sine values

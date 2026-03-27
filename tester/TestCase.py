@@ -22,11 +22,11 @@ class TestCase(ABC):
         self.suite = suite
         self.result = self.result_class()(self.config, None, suite=suite)
             
-    def execute(self):
+    def execute(self, run_data: dict):
         self.result.date = datetime.now(tz=None)
         try:
             TestCase.__executing = True
-            self.result.value = self._execute(self.config, self.assets)
+            self.result.value = self._execute(self.config, self.assets, run_data)
             self.result.evaluate()
             TestLogger().info(f'{self.config.name} value: {self.result.value}')
         except AbortRunException as e:
@@ -54,7 +54,7 @@ class TestCase(ABC):
         return self.__class__(deepcopy(self.config, memo), self.assets, deepcopy(self.suite, memo))
 
     @abstractmethod
-    def _execute(self, config: TestConfig, assets: dict) -> any:
+    def _execute(self, config: TestConfig, assets, run_data: dict) -> any:
         pass
 
     @property

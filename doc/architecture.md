@@ -41,8 +41,8 @@ Tester (ABC)                          tester/Tester.py
 ### `RunExecutorMixin` (`RunExecutor.py`)
 
 All test execution logic:
-- `run()` / `_run()` — starts the run thread
-- `_execute_testsuite()` — iterates setup → testcases → cleanup for one suite
+- `run()` / `_run()` — starts the run thread; `_run()` creates `self.run_data = {}` at the start and sets it to `None` at the end
+- `_execute_testsuite()` — iterates setup → testcases → cleanup for one suite, passing `run_data` to every `execute()` call
 - `_create_run()` — builds the `TestRun` object and merges attr chains
 - `_store_original_skip_states()` / `_track_program_modifications()` — tracks operator skip changes
 - `wait_for_test_end()` — blocks until the run thread finishes
@@ -182,4 +182,4 @@ TestCase.config.attr defaults
   | run_attr (DUT.attr merged with active_program.attr + operator UI edits)
 ```
 
-The final merged `config.attr` is what `_execute(config, assets)` receives.
+The final merged `config.attr` is what `_execute(config, assets, run_data)` receives as `config.attr`.

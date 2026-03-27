@@ -179,6 +179,42 @@ DUTS_ATTR_READ = {
     }]
 }
 
+#: Two-test suite where TC1 writes to run_data and TC2 reads it back.
+#: Verifies that run_data flows between consecutive test cases in a run.
+DUTS_RUN_DATA = {
+    "duts": [{
+        "name": "Test DUT",
+        "description": "DUT for run_data testing",
+        "image": "",
+        "product_id": "test-005",
+        "attr": {},
+        "programs": [{
+            "name": "Test Program",
+            "description": "Test program",
+            "attr": {},
+            "testsuites": ["RunDataSuite"]
+        }],
+        "testsuites": [{
+            "name": "RunDataSuite",
+            "module": "fixtures.fast_tests",
+            "testcases": [
+                {
+                    "name": "Write Test",
+                    "module": "fixtures.fast_tests",
+                    "test": "RunDataWriteTest",
+                    "tolerance": {}
+                },
+                {
+                    "name": "Read Test",
+                    "module": "fixtures.fast_tests",
+                    "test": "RunDataReadTest",
+                    "tolerance": {"expected": "hello"}
+                }
+            ]
+        }]
+    }]
+}
+
 STATION_DATA = {"serial_port": "COM1", "ip_address": "127.0.0.1"}
 
 

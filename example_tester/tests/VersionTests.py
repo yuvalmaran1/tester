@@ -10,7 +10,7 @@ class NodeVersionsTest(StringTestCase):
     '''
     Validates node versions via debug interface
     '''
-    def _execute(self, config: TestConfig, assets: dict) -> str:
+    def _execute(self, config: TestConfig, assets, run_data: dict) -> str:
         ver_type = config.attr.get("ver_type", None)
         comment = config.attr.get("comment", None)
 

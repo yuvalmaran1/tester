@@ -12,7 +12,7 @@ class DutSetupTest(PassFailTestCase):
     '''
     DUT setup test - performed prior to test suites
     '''
-    def _execute(self, config: TestConfig, assets: dict) -> TestResult.TestEval:
+    def _execute(self, config: TestConfig, assets, run_data: dict) -> TestResult.TestEval:
 
         TestLogger().debug('setting dut voltage')
 
@@ -28,7 +28,7 @@ class DutCleanupTest(PassFailTestCase):
     '''
     DUT cleanup test - performed prior to completion
     '''
-    def _execute(self, config: TestConfig, assets: dict) -> TestResult.TestEval:
+    def _execute(self, config: TestConfig, assets, run_data: dict) -> TestResult.TestEval:
 
         sleep(1)
 
@@ -38,7 +38,7 @@ class SetupTest(PassFailTestCase):
     '''
     setup test - performed prior to test suite
     '''
-    def _execute(self, config: TestConfig, assets: dict) -> TestResult.TestEval:
+    def _execute(self, config: TestConfig, assets, run_data: dict) -> TestResult.TestEval:
 
         sleep(1)
 
@@ -48,7 +48,7 @@ class CleanupTest(PassFailTestCase):
     '''
     cleanup test - performed after test suite
     '''
-    def _execute(self, config: TestConfig, assets: dict) -> TestResult.TestEval:
+    def _execute(self, config: TestConfig, assets, run_data: dict) -> TestResult.TestEval:
 
         sleep(1)
 

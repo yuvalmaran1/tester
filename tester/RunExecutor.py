@@ -64,7 +64,7 @@ class RunExecutorMixin:
                         else:
                             ts.setup.result.comment = "Skipped by user"
             else:
-                ts.setup.execute()
+                ts.setup.execute(self.run_data)
                 skip_testcases = ts.setup.result.result != TestResult.TestEval.PASS
             self.db.append_result(ts.setup.result, run_id)
             self._update_run()
@@ -89,7 +89,7 @@ class RunExecutorMixin:
                             tc.result.comment = "Skipped by user"
             else:
                 self._update_status(f"Executing Test Case '{tc.config.name}'")
-                tc.execute()
+                tc.execute(self.run_data)
             self.db.append_result(tc.result, run_id)
             self._update_run()
             self._test_done(tc.result.result)
@@ -110,7 +110,7 @@ class RunExecutorMixin:
                         else:
                             ts.cleanup.result.comment = "Skipped by user"
             else:
-                ts.cleanup.execute()
+                ts.cleanup.execute(self.run_data)
             self.db.append_result(ts.cleanup.result, run_id)
             self._update_run()
             self._test_done(ts.cleanup.result.result)
@@ -158,6 +158,7 @@ class RunExecutorMixin:
 
         self._reset_stats(total=len(self.test_run.test_results))
         self.active_test = 0
+        self.run_data = {}
         self.test_run.start()
         run_id = self.db.append_run(self.test_run)
         self.test_run.run_id = run_id
@@ -169,7 +170,7 @@ class RunExecutorMixin:
         self._update_status(f"Executing {self.active_dut.name} Setup")
         if self.dut_setup:
             self._update_status(f"Executing Test Case '{self.dut_setup.config.name}'")
-            self.dut_setup.execute()
+            self.dut_setup.execute(self.run_data)
             skip_all = self.dut_setup.result.result != TestResult.TestEval.PASS
             self.db.append_result(self.dut_setup.result, run_id)
             self._update_run()
@@ -184,7 +185,7 @@ class RunExecutorMixin:
         self._update_status(f"Executing {self.active_dut.name} Cleanup")
         if self.dut_cleanup:
             self._update_status(f"Executing Test Case '{self.dut_cleanup.config.name}'")
-            self.dut_cleanup.execute()
+            self.dut_cleanup.execute(self.run_data)
             skip_all = self.dut_cleanup.result.result != TestResult.TestEval.PASS
             self.db.append_result(self.dut_cleanup.result, run_id)
             self._update_run()
@@ -192,6 +193,7 @@ class RunExecutorMixin:
             self.active_test += 1
             self.logger.info(f"Test '{self.dut_cleanup.config.name}' complete. Result: {self.dut_cleanup.result.result.name}")
 
+        self.run_data = None
         self.running = False
         self.test_run.end()
         self._track_program_modifications()
