@@ -1,5 +1,6 @@
 'use client';
 import * as React from 'react';
+import Image from 'next/image';
 import { socket } from '../socket';
 
 export default function LoginDialog({ show }) {
@@ -46,7 +47,7 @@ export default function LoginDialog({ show }) {
             }}>
                 {/* Logo + title */}
                 <div className="flex items-center gap-3 mb-6">
-                    <img src="/icon.svg" alt="logo" style={{ width: 36, height: 36 }} />
+                    <Image src="/icon.svg" alt="logo" width={36} height={36} />
                     <div>
                         <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '1rem' }}>HiL Framework</div>
                         <div style={{ color: '#6366f1', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.07em' }}>

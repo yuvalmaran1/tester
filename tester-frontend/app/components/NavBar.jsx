@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useConnection } from '../contexts/ConnectionContext';
@@ -75,7 +76,7 @@ export default function Sidebar() {
             {/* Brand */}
             <div style={{ borderBottom: '1px solid #2d3748', padding: '1rem 1.25rem' }}>
                 <div className="flex items-center gap-3">
-                    <img src="/icon.svg" alt="logo" style={{ width: '34px', height: '34px', flexShrink: 0 }} />
+                    <Image src="/icon.svg" alt="logo" width={34} height={34} style={{ flexShrink: 0 }} />
                     <div style={{ minWidth: 0 }}>
                         <div style={{
                             color: '#e2e8f0', fontWeight: 700, fontSize: '0.875rem',
