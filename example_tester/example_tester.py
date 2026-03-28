@@ -61,6 +61,17 @@ class SensorBoardAssets:
 # ── Tester subclass ────────────────────────────────────────────────────────────
 
 class SensorBoardTester(Tester):
+    """Production tester for the Smart Sensor Board.
+
+    Before each run, set the unit serial number either via the UI "Unit Serial
+    Number" input or programmatically::
+
+        tester.serial_number = 'SN-2026-00001'
+
+    The serial number and a SHA-256 hash of duts.json are recorded with every
+    run for ISO 9001 traceability.
+    """
+
     def __init__(self, ui: bool = True) -> None:
         cfg = TesterConfig(
             name="Smart Sensor Board Production Tester",
@@ -92,4 +103,6 @@ class SensorBoardTester(Tester):
 
 
 if __name__ == "__main__":
+    # Serial number can be set from the UI or programmatically:
+    # tester.serial_number = 'SN-2026-00001'
     SensorBoardTester()

@@ -52,12 +52,13 @@ export default function Home() {
     const [log, setLog] = React.useState([]);
     const [showAttr, setShowAttr] = React.useState(false);
     const [operator, setOperator] = React.useState(undefined); // undefined = not yet received
+    const [serialNumber, setSerialNumber] = React.useState('');
 
     React.useEffect(() => calcProgress(tester), [tester]);
     React.useEffect(() => getState(), []);
 
     React.useEffect(() => {
-        const handleTester = (data) => { setTester(data); setOperator(data?.operator ?? null); };
+        const handleTester = (data) => { setTester(data); setOperator(data?.operator ?? null); setSerialNumber(data?.serial_number ?? ''); };
         const handleActiveDut = (data) => setActiveDut(data);
         const handleActiveProgram = (data) => {
             setActiveProgram(data);
@@ -78,6 +79,7 @@ export default function Home() {
             const t = _.get(data, 'tester', {});
             setTester(t);
             setOperator(t?.operator ?? null);
+            setSerialNumber(_.get(data, 'tester.serial_number', ''));
             setDuts(_.get(data, 'duts', []));
             setPrograms(_.get(data, 'programs', []));
             setActiveDut(_.get(data, 'dut', {}));
@@ -109,6 +111,11 @@ export default function Home() {
             socket.off('test_execute_state', handleTestExecuteState);
         };
     });
+
+    const handleSerialChange = (val) => {
+        setSerialNumber(val);
+        socket.emit('set_serial', { serial_number: val });
+    };
 
     const handleDutChange = (dut) => {
         socket.emit('set_dut', { dut });
@@ -269,6 +276,26 @@ export default function Home() {
                                 </Select>
                             </FormControl>
                         </div>
+                    </div>
+
+                    {/* Row 2.5: Serial number */}
+                    <div>
+                        <label className="block text-xs font-medium mb-1" style={{ color: '#64748b' }}>
+                            Unit Serial Number
+                        </label>
+                        <input
+                            type="text"
+                            value={serialNumber}
+                            onChange={e => handleSerialChange(e.target.value)}
+                            disabled={running}
+                            placeholder="Scan or enter serial number…"
+                            style={{
+                                width: '100%', padding: '0.45rem 0.75rem',
+                                background: '#0d1117', border: '1px solid #2d3748',
+                                borderRadius: 6, color: '#e2e8f0', fontSize: '0.875rem',
+                                outline: 'none', opacity: running ? 0.5 : 1,
+                            }}
+                        />
                     </div>
 
                     {/* Row 3: Stats */}

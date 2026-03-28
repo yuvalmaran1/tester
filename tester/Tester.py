@@ -1,3 +1,4 @@
+import hashlib
 import pathlib
 import copy
 import pyjson5 as json
@@ -43,6 +44,8 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
 
         self.assets = self._init(self.station_config)
         self.duts = self.populate_duts(json.load(open(config.duts_file,'r')))
+        with open(config.duts_file, 'rb') as _f:
+            self.config_hash = hashlib.sha256(_f.read()).hexdigest()
         self.duts_path = pathlib.Path(config.duts_file).parent.resolve()
         self.active_dut: Dut = None
         self.dut_setup: TestCase = None
@@ -54,6 +57,7 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         self._reset_stats()
         self.active_test = -1
         self.abort_run = False
+        self.serial_number = ''
         self.run_thread = None
         self.current_operator = None  # dict with id/username/display_name/role or None
 
@@ -93,6 +97,7 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         self.interface.update_operator_handler = self._update_operator_handler
         self.interface.delete_operator_handler = self._delete_operator_handler
         self.interface.update_operator_password_handler = self._update_operator_password_handler
+        self.interface.set_serial_handler = self._set_serial_handler
         self._generate_state()
         self.select_dut(next(iter(self.duts)).name)
         self.select_program(next(iter(self.active_dut.programs)).name)
@@ -217,6 +222,8 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         dut_name = self.active_dut.name if self.active_dut else next(iter(self.duts)).name
         program_name = self.active_program.name if self.active_program else None
         self.duts = self.populate_duts(json.load(open(self.config.duts_file,'r')))
+        with open(self.config.duts_file, 'rb') as _f:
+            self.config_hash = hashlib.sha256(_f.read()).hexdigest()
         self.active_dut: Dut = None
         self.dut_setup: TestCase = None
         self.dut_cleanup: TestCase = None
@@ -232,6 +239,10 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         if self.run_attr | attr != self.run_attr:
             self.run_attr |= attr
             self._update_program()
+
+    def _set_serial_handler(self, data):
+        self.serial_number = (data or {}).get('serial_number', '')
+        self._update_tester()
 
     def _dialog_response_handler(self, rsp, data):
         self.dialog.close(rsp, data)

@@ -60,6 +60,7 @@ class StateManagerMixin:
             "aborted": self.test_stats['ABORTED'],
             "dialog": self.dialog.encode(),
             "operator": self.current_operator,
+            "serial_number": self.serial_number,
         }
         if emit:
             self.interface.emit_event(TesterRequest.Tester.value, self.state['tester'])

@@ -12,9 +12,9 @@ class SQLiteDatabase(DatabaseInterface):
     """SQLite database implementation."""
 
     RUNS_TABLE = "runs"
-    RUNS_COLS_DEF = "run_id integer primary key autoincrement, tester text, tester_ver text, dut text, dut_desc text, dut_product_id text, dut_image text, program text, program_desc text, start_date text, end_date text, result text, log text, attachment blob, program_modified integer, program_attr text, operator text"
-    RUNS_COLS = "tester, tester_ver, dut, dut_desc, dut_product_id, dut_image, program, program_desc, start_date, end_date, result, log, attachment, program_modified, program_attr, operator"
-    RUNS_REPORT_COLS = "run_id, dut, program, start_date, end_date, result, operator"
+    RUNS_COLS_DEF = "run_id integer primary key autoincrement, tester text, tester_ver text, dut text, dut_desc text, dut_product_id text, dut_image text, program text, program_desc text, start_date text, end_date text, result text, log text, attachment blob, program_modified integer, program_attr text, operator text, serial_number text, config_hash text"
+    RUNS_COLS = "tester, tester_ver, dut, dut_desc, dut_product_id, dut_image, program, program_desc, start_date, end_date, result, log, attachment, program_modified, program_attr, operator, serial_number, config_hash"
+    RUNS_REPORT_COLS = "run_id, dut, program, start_date, end_date, result, operator, serial_number"
     RESULT_TABLE = "results"
     RESULT_COLS_DEF = "result_id integer primary key autoincrement, run_id integer, date text, suite text, name text, tolerance text, value text, unit text, result text, comment text, infoonly integer, skip integer, attr text, result_type text, role text"
     RESULT_COLS = "run_id, date, suite, name, tolerance, value, unit, result, comment, infoonly, skip, attr, result_type, role"
@@ -70,6 +70,13 @@ class SQLiteDatabase(DatabaseInterface):
                 cursor.execute(f'ALTER TABLE {self.RUNS_TABLE} ADD COLUMN operator text')
                 print("Added operator column to existing database")
 
+            if 'serial_number' not in columns:
+                cursor.execute(f'ALTER TABLE {self.RUNS_TABLE} ADD COLUMN serial_number text')
+                print("Added serial_number column to existing database")
+            if 'config_hash' not in columns:
+                cursor.execute(f'ALTER TABLE {self.RUNS_TABLE} ADD COLUMN config_hash text')
+                print("Added config_hash column to existing database")
+
             # Check if role column exists in results table, add it if not (migration)
             cursor.execute(f"PRAGMA table_info({self.RESULT_TABLE})")
             result_columns = [column[1] for column in cursor.fetchall()]
@@ -87,8 +94,9 @@ class SQLiteDatabase(DatabaseInterface):
                        run.dut_image, run.program, run.program_desc, str(run.start_date),
                        str(run.end_date), str(run.result), json.dumps(run.log), run.attachment.getvalue(),
                        int(getattr(run, 'program_modified', False)), json.dumps(getattr(run, 'program_attr', {})),
-                       getattr(run, 'operator', ''))
-            cursor.execute(f'INSERT INTO {self.RUNS_TABLE}({self.RUNS_COLS}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', entities)
+                       getattr(run, 'operator', ''), getattr(run, 'serial_number', ''),
+                       getattr(run, 'config_hash', ''))
+            cursor.execute(f'INSERT INTO {self.RUNS_TABLE}({self.RUNS_COLS}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', entities)
             run_id = cursor.lastrowid
             con.commit()
             return run_id

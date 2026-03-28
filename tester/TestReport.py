@@ -471,6 +471,9 @@ tbody tr:hover td{background:rgba(99,102,241,.04)}
 
         tester_ver = self.run.tester_ver if self.run.tester_ver else 'N/A'
         generated  = self.run.end_date.strftime('%d %b %Y, %H:%M')
+        serial_number = getattr(self.run, 'serial_number', '') or '—'
+        config_hash = getattr(self.run, 'config_hash', '') or '—'
+        config_hash_display = (config_hash[:16] + '…') if len(config_hash) > 16 else config_hash
 
         # ---- Stats cards ----
         stat_items = [
@@ -558,6 +561,8 @@ tbody tr:hover td{background:rgba(99,102,241,.04)}
             f'<span class="info-value">{dut_desc}</span></div>'
             f'<div class="info-item"><span class="info-label">Product ID</span>'
             f'<span class="info-value">{dut_pid}</span></div>'
+            f'<div class="info-item"><span class="info-label">Serial Number</span>'
+            f'<span class="info-value text-mono">{serial_number}</span></div>'
             f'</div>'
             f'{dut_img_html}'
             f'</div></div>'
@@ -575,6 +580,8 @@ tbody tr:hover td{background:rgba(99,102,241,.04)}
             f'<span class="info-value text-mono">{dur_str}</span></div>'
             f'<div class="info-item"><span class="info-label">Operator</span>'
             f'<span class="info-value">{operator_str}</span></div>'
+            f'<div class="info-item"><span class="info-label">Config Hash</span>'
+            f'<span class="info-value text-mono" style="font-size:0.75rem">{config_hash_display}</span></div>'
             f'</div>'
 
             f'</div>\n'  # end .two-col

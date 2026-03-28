@@ -389,3 +389,52 @@ def test_run_data_is_isolated_between_runs(make_tester):
     r = _result_by_name(t, "Read Test")
     assert r is not None
     assert r.result == E.PASS
+
+
+# ── Traceability ──────────────────────────────────────────────────────────────
+
+def test_config_hash_set_after_init(make_tester):
+    """Tester computes a non-empty config hash on startup."""
+    t = make_tester()
+    assert len(t.config_hash) == 64  # SHA-256 hex digest
+
+
+def test_config_hash_is_sha256_hex(make_tester):
+    """Config hash is a valid lowercase hex string."""
+    t = make_tester()
+    assert all(c in '0123456789abcdef' for c in t.config_hash)
+
+
+def test_serial_number_default_empty(make_tester):
+    t = make_tester()
+    assert t.serial_number == ''
+
+
+def test_run_stores_serial_number(make_tester):
+    """Serial number set before run is persisted in DB."""
+    t = make_tester()
+    t.serial_number = 'SN-TEST-001'
+    t.run()
+    t.wait_for_test_end()
+    run = t.db.get_run(t.db.get_latest_run_id())
+    assert run.serial_number == 'SN-TEST-001'
+
+
+def test_run_stores_config_hash(make_tester):
+    """Config hash is persisted in DB with each run."""
+    t = make_tester()
+    t.run()
+    t.wait_for_test_end()
+    run = t.db.get_run(t.db.get_latest_run_id())
+    assert run.config_hash == t.config_hash
+    assert len(run.config_hash) == 64
+
+
+def test_run_empty_serial_if_not_set(make_tester):
+    """When no serial number is set, run stores empty string."""
+    t = make_tester()
+    assert t.serial_number == ''
+    t.run()
+    t.wait_for_test_end()
+    run = t.db.get_run(t.db.get_latest_run_id())
+    assert run.serial_number == '' or run.serial_number is None
