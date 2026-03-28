@@ -217,6 +217,36 @@ DUTS_RUN_DATA = {
 
 STATION_DATA = {"serial_port": "COM1", "ip_address": "127.0.0.1"}
 
+#: Program with an SN generator; the generator produces sequential SN-NNNN values.
+DUTS_SN_GENERATOR = {
+    "duts": [{
+        "name": "Test DUT",
+        "description": "DUT for SN generator testing",
+        "image": "",
+        "product_id": "test-006",
+        "attr": {},
+        "programs": [{
+            "name": "Test Program",
+            "description": "Test program with SN generator",
+            "sn_generator": {
+                "module": "fixtures.fast_tests",
+                "class": "SequentialSNGenerator"
+            },
+            "testsuites": ["Suite1"]
+        }],
+        "testsuites": [{
+            "name": "Suite1",
+            "module": "fixtures.fast_tests",
+            "testcases": [{
+                "name": "Pass Test",
+                "module": "fixtures.fast_tests",
+                "test": "FastPassTest",
+                "tolerance": {}
+            }]
+        }]
+    }]
+}
+
 
 # ---------------------------------------------------------------------------
 # Factory fixture: build a MinimalTester from arbitrary duts data

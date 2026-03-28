@@ -165,6 +165,16 @@ class RunExecutorMixin:
         self.run_data = {}
         op = self.current_operator or {}
         self.test_run.operator = op.get('display_name') or op.get('username', '')
+
+        # If the active program has an SN generator, invoke it now
+        if self.active_program.sn_generator is not None:
+            try:
+                self.serial_number = self.active_program.sn_generator.generate()
+                self.logger.info(f"Generated serial number: {self.serial_number}")
+                self._update_tester()
+            except Exception as exc:
+                self.logger.error(f"Serial number generator failed: {exc}")
+
         self.test_run.serial_number = self.serial_number
         self.test_run.config_hash = self.config_hash
         self.test_run.start()

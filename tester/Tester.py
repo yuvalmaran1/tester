@@ -128,6 +128,9 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
                     user_skip_states[f"{ts.name}_cleanup"] = ts.cleanup.config.skip
 
         self.active_program = copy.deepcopy(program)
+        # sn_generator is stateful (counter) — preserve the original instance
+        # so state (e.g. sequential counter) is maintained across runs.
+        self.active_program.sn_generator = program.sn_generator
         self.dut_setup = copy.deepcopy(self.active_dut.setup)
         self.dut_cleanup = copy.deepcopy(self.active_dut.cleanup)
 

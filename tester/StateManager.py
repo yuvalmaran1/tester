@@ -124,7 +124,8 @@ class StateManagerMixin:
                 "description": self.active_program.description,
                 "attr": self.run_attr,
                 "attr_schema": self.active_program.attr_schema,
-                "test_cases": test_cases
+                "test_cases": test_cases,
+                "has_sn_generator": self.active_program.sn_generator is not None,
             }
             self._update_tester(emit)
             if emit:

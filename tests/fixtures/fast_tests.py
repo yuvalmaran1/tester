@@ -10,6 +10,7 @@ from tester.TestResult import TestResult
 from tester.TestConfig import TestConfig
 from tester.TestResults.PassFailTestResult import PassFailTestCase
 from tester.TestResults.StringTestResult import StringTestCase
+from tester.SNGenerator import SNGenerator
 
 
 class FastPassTest(PassFailTestCase):
@@ -66,6 +67,18 @@ class RunDataReadTest(StringTestCase):
     """Reads run_data['written'] — used to verify data flows between test cases."""
     def _execute(self, config: TestConfig, assets, run_data: dict) -> str:
         return run_data.get('written', 'missing')
+
+
+class SequentialSNGenerator(SNGenerator):
+    """Generates serial numbers SN-0001, SN-0002, … for use in tests."""
+
+    def __init__(self, assets):
+        super().__init__(assets)
+        self._counter = 0
+
+    def generate(self) -> str:
+        self._counter += 1
+        return f"SN-{self._counter:04d}"
 
 
 class SlowTest(PassFailTestCase):

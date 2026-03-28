@@ -278,7 +278,8 @@ export default function Home() {
                         </div>
                     </div>
 
-                    {/* Row 2.5: Serial number */}
+                    {/* Row 2.5: Serial number (hidden when program has a generator) */}
+                    {!_.get(activeProgram, 'has_sn_generator', false) && (
                     <div>
                         <label className="block text-xs font-medium mb-1" style={{ color: '#64748b' }}>
                             Unit Serial Number
@@ -297,6 +298,7 @@ export default function Home() {
                             }}
                         />
                     </div>
+                    )}
 
                     {/* Row 3: Stats */}
                     <div className="flex items-center gap-3 flex-wrap">
