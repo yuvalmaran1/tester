@@ -19,21 +19,23 @@ class TestLogger(metaclass=Singleton):
         sh.setFormatter(self._fmt)
         self._logger.addHandler(sh)
 
-    # Proxy methods so callers can use logger.info(...) etc. directly
+    # Proxy methods so callers can use logger.info(...) etc. directly.
+    # stacklevel=2 makes the logging machinery attribute the record to the
+    # actual caller rather than this proxy, so %(module)s shows the right name.
     def debug(self, msg, *args, **kwargs):
-        self._logger.debug(msg, *args, **kwargs)
+        self._logger.debug(msg, *args, stacklevel=2, **kwargs)
 
     def info(self, msg, *args, **kwargs):
-        self._logger.info(msg, *args, **kwargs)
+        self._logger.info(msg, *args, stacklevel=2, **kwargs)
 
     def warning(self, msg, *args, **kwargs):
-        self._logger.warning(msg, *args, **kwargs)
+        self._logger.warning(msg, *args, stacklevel=2, **kwargs)
 
     def error(self, msg, *args, **kwargs):
-        self._logger.error(msg, *args, **kwargs)
+        self._logger.error(msg, *args, stacklevel=2, **kwargs)
 
     def critical(self, msg, *args, **kwargs):
-        self._logger.critical(msg, *args, **kwargs)
+        self._logger.critical(msg, *args, stacklevel=2, **kwargs)
 
     def addHandler(self, handler):
         self._logger.addHandler(handler)
