@@ -278,6 +278,7 @@
                 {
                     "name": "Calibration Only",
                     "description": "Re-calibration jig: sensor accuracy + calibration write (~1 min)",
+                    "default_serial_number": "SSB-CAL-001",
                     "testsuites": ["Sensors", "Calibration"]
                 }
             ]
