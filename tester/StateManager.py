@@ -60,6 +60,7 @@ class StateManagerMixin:
             "aborted": self.test_stats['ABORTED'],
             "dialog": self.dialog.encode(),
             "operator": self.current_operator,
+            "serial_number": self.serial_number,
         }
         if emit:
             self.interface.emit_event(TesterRequest.Tester.value, self.state['tester'])
@@ -123,7 +124,8 @@ class StateManagerMixin:
                 "description": self.active_program.description,
                 "attr": self.run_attr,
                 "attr_schema": self.active_program.attr_schema,
-                "test_cases": test_cases
+                "test_cases": test_cases,
+                "has_sn_generator": self.active_program.sn_generator is not None,
             }
             self._update_tester(emit)
             if emit:

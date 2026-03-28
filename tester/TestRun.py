@@ -26,6 +26,8 @@ class TestRun:
         self.attachments_exist = False
         self.program_modified = False  # Boolean flag indicating if program was modified
         self.operator = ''            # Username of the operator who started the run
+        self.serial_number = ''       # unit serial number entered before the run
+        self.config_hash = ''         # SHA-256 of duts.json at run time
 
     def start(self):
         self.start_date = datetime.now(tz=None)
@@ -107,5 +109,7 @@ class TestRun:
         run.attachments_exist = len(run.attachment.getbuffer()) > 0
         run.program_modified = d.get('program_modified', False)
         run.operator = d.get('operator', '')
+        run.serial_number = d.get('serial_number', '')
+        run.config_hash = d.get('config_hash', '')
 
         return run

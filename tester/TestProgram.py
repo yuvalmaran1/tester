@@ -1,7 +1,9 @@
 import copy
 from typing import List
+from importlib import import_module, reload
 from .TestResult import TestResult
 from .TestCase import TestCase
+from .TestConfig import TestConfig
 from .TestSuite import TestSuite
 
 class TestProgram:
@@ -12,14 +14,25 @@ class TestProgram:
         self.testsuites: List[TestSuite] = []
         self.attr = {}
         self.attr_schema = {}
+        self.sn_generator = None  # StringTestCase instance, or None for manual UI input
 
     @staticmethod
-    def from_dict(d, test_suits: List[TestSuite]):
+    def from_dict(d, test_suits: List[TestSuite], assets=None, debug_reload: bool = False):
         p = TestProgram()
         p.name = d.get('name', p.name)
         p.description = d.get('description', p.description)
         p.attr = d.get('attr', {})
         p.attr_schema = d.get('attr_schema', {"type": "object", "properties": {}})
+
+        sn_spec = d.get('sn_generator')
+        if sn_spec:
+            mod = import_module(sn_spec['module'])
+            if debug_reload:
+                mod = reload(mod)
+            cls = getattr(mod, sn_spec['test'])
+            cfg = TestConfig.from_dict({'name': sn_spec.get('name', 'SN Generator'), 'attr': sn_spec.get('attr', {})})
+            p.sn_generator = cls(cfg, assets or {}, '')
+
 
         for ts_item in d.get('testsuites', []):
             # Support both string format (backwards compatible) and object format (new)

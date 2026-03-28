@@ -64,7 +64,7 @@ class Dut:
 
         programs = d.get("programs", [])
         for p in programs:
-            prog = TestProgram.from_dict(p, dut.test_suites)
+            prog = TestProgram.from_dict(p, dut.test_suites, assets=assets, debug_reload=debug_reload)
             dut.programs.append(prog)
         return dut
         

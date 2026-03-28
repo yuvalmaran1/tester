@@ -282,3 +282,64 @@ def test_migration_program_modified_column(tmp_path):
     with sqlite3.connect(db_path) as con:
         cols = [row[1] for row in con.execute("PRAGMA table_info(runs)").fetchall()]
     assert 'program_modified' in cols
+
+
+# ── Traceability: serial_number + config_hash ─────────────────────────────────
+
+def test_serial_number_stored_and_retrieved(db):
+    run = _run()
+    run.serial_number = 'SN-2026-00042'
+    run_id = db.create_run(run)
+    retrieved = db.get_run(run_id)
+    assert retrieved.serial_number == 'SN-2026-00042'
+
+
+def test_config_hash_stored_and_retrieved(db):
+    run = _run()
+    run.config_hash = 'a' * 64  # fake SHA-256
+    run_id = db.create_run(run)
+    retrieved = db.get_run(run_id)
+    assert retrieved.config_hash == 'a' * 64
+
+
+def test_serial_number_appears_in_get_runs(db):
+    run = _run()
+    run.serial_number = 'SN-TEST'
+    db.create_run(run)
+    runs = json.loads(db.get_runs())
+    assert runs[0]['serial_number'] == 'SN-TEST'
+
+
+def test_empty_serial_number_stored_as_empty(db):
+    run_id = db.create_run(_run())
+    retrieved = db.get_run(run_id)
+    assert retrieved.serial_number == '' or retrieved.serial_number is None
+
+
+def test_migration_adds_serial_and_hash_columns(tmp_path):
+    """Pre-existing DB without serial_number/config_hash columns is migrated."""
+    db_path = str(tmp_path / 'legacy_trace.db')
+    with sqlite3.connect(db_path) as con:
+        con.execute(
+            "CREATE TABLE runs("
+            "run_id integer primary key autoincrement, tester text, tester_ver text, "
+            "dut text, dut_desc text, dut_product_id text, dut_image text, "
+            "program text, program_desc text, start_date text, end_date text, "
+            "result text, log text, attachment blob, program_modified integer, "
+            "program_attr text)"
+        )
+        con.execute(
+            "CREATE TABLE results("
+            "result_id integer primary key autoincrement, run_id integer, "
+            "date text, suite text, name text, tolerance text, value text, "
+            "unit text, result text, comment text, infoonly integer, skip integer, "
+            "attr text, result_type text, role text)"
+        )
+        con.commit()
+
+    SQLiteDatabase(db_path)
+
+    with sqlite3.connect(db_path) as con:
+        cols = [row[1] for row in con.execute('PRAGMA table_info(runs)').fetchall()]
+    assert 'serial_number' in cols
+    assert 'config_hash' in cols

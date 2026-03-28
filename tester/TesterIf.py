@@ -57,6 +57,8 @@ class TesterRequest(Enum):
     DeleteOperator = "delete_operator"
     UpdateOperatorPassword = "update_operator_password"
     OperatorList = "operator_list"
+    SetSerial = "set_serial"
+    SerialNumber = "serial_number"
 
 class TesterIf:
     def __init__(self) -> None:
@@ -90,6 +92,7 @@ class TesterIf:
         self.update_operator_handler = None
         self.delete_operator_handler = None
         self.update_operator_password_handler = None
+        self.set_serial_handler = None
         self.register_request('connect', self._connect_handler)
         self.register_request('disconnect', self._disconnect_handler)
         self.register_request(TesterRequest.StartRun.value, self._start_run_handler)
@@ -108,6 +111,7 @@ class TesterIf:
         self.register_request(TesterRequest.UpdateOperator.value, self._update_operator_handler)
         self.register_request(TesterRequest.DeleteOperator.value, self._delete_operator_handler)
         self.register_request(TesterRequest.UpdateOperatorPassword.value, self._update_operator_password_handler)
+        self.register_request(TesterRequest.SetSerial.value, self._set_serial_handler)
         self._add_endpoints()
         log_handler = SocketLogHandler(self)
         log_handler.setFormatter(TestLogger._fmt)
@@ -338,6 +342,10 @@ class TesterIf:
     def _update_operator_password_handler(self, data):
         if self.update_operator_password_handler:
             self.update_operator_password_handler(data)
+
+    def _set_serial_handler(self, data):
+        if self.set_serial_handler:
+            self.set_serial_handler(data)
 
 
 class SocketLogHandler(StreamHandler):

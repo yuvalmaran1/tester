@@ -259,6 +259,12 @@
                 {
                     "name": "Full Production",
                     "description": "Complete factory test sequence including calibration and programming (~3 min)",
+                    // SN generator: serial number is auto-assigned before each run; manual
+                    // input is hidden in the UI when this key is present.
+                    "sn_generator": {
+                        "module": "sn_generators",
+                        "test": "IncrementalSNGenerator"
+                    },
                     "testsuites": [
                         "Power Rails",
                         "Firmware",

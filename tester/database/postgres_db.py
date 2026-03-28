@@ -12,9 +12,9 @@ class PostgreSQLDatabase(DatabaseInterface):
     """PostgreSQL database implementation with connection pooling."""
 
     RUNS_TABLE = "runs"
-    RUNS_COLS_DEF = "run_id SERIAL PRIMARY KEY, tester TEXT, tester_ver TEXT, dut TEXT, dut_desc TEXT, dut_product_id TEXT, dut_image TEXT, program TEXT, program_desc TEXT, start_date TEXT, end_date TEXT, result TEXT, log TEXT, attachment BYTEA, program_modified BOOLEAN, program_attr TEXT, operator TEXT"
-    RUNS_COLS = "tester, tester_ver, dut, dut_desc, dut_product_id, dut_image, program, program_desc, start_date, end_date, result, log, attachment, program_modified, program_attr, operator"
-    RUNS_REPORT_COLS = "run_id, dut, program, start_date, end_date, result, operator"
+    RUNS_COLS_DEF = "run_id SERIAL PRIMARY KEY, tester TEXT, tester_ver TEXT, dut TEXT, dut_desc TEXT, dut_product_id TEXT, dut_image TEXT, program TEXT, program_desc TEXT, start_date TEXT, end_date TEXT, result TEXT, log TEXT, attachment BYTEA, program_modified BOOLEAN, program_attr TEXT, operator TEXT, serial_number TEXT, config_hash TEXT"
+    RUNS_COLS = "tester, tester_ver, dut, dut_desc, dut_product_id, dut_image, program, program_desc, start_date, end_date, result, log, attachment, program_modified, program_attr, operator, serial_number, config_hash"
+    RUNS_REPORT_COLS = "run_id, dut, program, start_date, end_date, result, operator, serial_number"
     RESULT_TABLE = "results"
     RESULT_COLS_DEF = "result_id SERIAL PRIMARY KEY, run_id INTEGER, date TEXT, suite TEXT, name TEXT, tolerance TEXT, value TEXT, unit TEXT, result TEXT, comment TEXT, infoonly INTEGER, skip INTEGER, attr TEXT, result_type TEXT, role TEXT"
     RESULT_COLS = "run_id, date, suite, name, tolerance, value, unit, result, comment, infoonly, skip, attr, result_type, role"
@@ -114,6 +114,13 @@ class PostgreSQLDatabase(DatabaseInterface):
                     cursor.execute(f"ALTER TABLE {self.RESULT_TABLE} ADD COLUMN role TEXT DEFAULT 'testcase'")
                     print("Added role column to existing PostgreSQL database")
 
+                if not col_exists(self.RUNS_TABLE, 'serial_number'):
+                    cursor.execute(f'ALTER TABLE {self.RUNS_TABLE} ADD COLUMN serial_number TEXT')
+                    print("Added serial_number column to existing PostgreSQL database")
+                if not col_exists(self.RUNS_TABLE, 'config_hash'):
+                    cursor.execute(f'ALTER TABLE {self.RUNS_TABLE} ADD COLUMN config_hash TEXT')
+                    print("Added config_hash column to existing PostgreSQL database")
+
                 conn.commit()
         finally:
             self._return_connection(conn)
@@ -127,8 +134,9 @@ class PostgreSQLDatabase(DatabaseInterface):
                            run.dut_image, run.program, run.program_desc, run.start_date,
                            run.end_date, str(run.result), json.dumps(run.log), run.attachment.getvalue(),
                            getattr(run, 'program_modified', False), json.dumps(getattr(run, 'program_attr', {})),
-                           getattr(run, 'operator', ''))
-                cursor.execute(f'INSERT INTO {self.RUNS_TABLE}({self.RUNS_COLS}) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING run_id', entities)
+                           getattr(run, 'operator', ''), getattr(run, 'serial_number', ''),
+                           getattr(run, 'config_hash', ''))
+                cursor.execute(f'INSERT INTO {self.RUNS_TABLE}({self.RUNS_COLS}) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING run_id', entities)
                 run_id = cursor.fetchone()[0]
                 conn.commit()
                 return run_id

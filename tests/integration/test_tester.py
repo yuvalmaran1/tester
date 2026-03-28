@@ -9,7 +9,7 @@ from tester.TestResult import TestResult
 
 from conftest import (
     DUTS_STANDARD, DUTS_DUT_SETUP_FAIL, DUTS_SLOW, DUTS_ATTR_READ,
-    DUTS_RUN_DATA, STATION_DATA,
+    DUTS_RUN_DATA, DUTS_SN_GENERATOR, STATION_DATA,
 )
 
 E = TestResult.TestEval
@@ -389,3 +389,99 @@ def test_run_data_is_isolated_between_runs(make_tester):
     r = _result_by_name(t, "Read Test")
     assert r is not None
     assert r.result == E.PASS
+
+
+# ── Traceability ──────────────────────────────────────────────────────────────
+
+def test_config_hash_set_after_init(make_tester):
+    """Tester computes a non-empty config hash on startup."""
+    t = make_tester()
+    assert len(t.config_hash) == 64  # SHA-256 hex digest
+
+
+def test_config_hash_is_sha256_hex(make_tester):
+    """Config hash is a valid lowercase hex string."""
+    t = make_tester()
+    assert all(c in '0123456789abcdef' for c in t.config_hash)
+
+
+def test_serial_number_default_empty(make_tester):
+    t = make_tester()
+    assert t.serial_number == ''
+
+
+def test_run_stores_serial_number(make_tester):
+    """Serial number set before run is persisted in DB."""
+    t = make_tester()
+    t.serial_number = 'SN-TEST-001'
+    t.run()
+    t.wait_for_test_end()
+    run = t.db.get_run(t.db.get_latest_run_id())
+    assert run.serial_number == 'SN-TEST-001'
+
+
+def test_run_stores_config_hash(make_tester):
+    """Config hash is persisted in DB with each run."""
+    t = make_tester()
+    t.run()
+    t.wait_for_test_end()
+    run = t.db.get_run(t.db.get_latest_run_id())
+    assert run.config_hash == t.config_hash
+    assert len(run.config_hash) == 64
+
+
+def test_run_empty_serial_if_not_set(make_tester):
+    """When no serial number is set, run stores empty string."""
+    t = make_tester()
+    assert t.serial_number == ''
+    t.run()
+    t.wait_for_test_end()
+    run = t.db.get_run(t.db.get_latest_run_id())
+    assert run.serial_number == '' or run.serial_number is None
+
+
+# ── SN Generator ──────────────────────────────────────────────────────────────
+
+def test_sn_generator_loaded_on_program(make_tester):
+    """Program with sn_generator spec must have a non-None sn_generator."""
+    t = make_tester(DUTS_SN_GENERATOR)
+    assert t.active_program.sn_generator is not None
+
+
+def test_no_sn_generator_is_none(make_tester):
+    """Program without sn_generator spec must have sn_generator == None."""
+    t = make_tester()
+    assert t.active_program.sn_generator is None
+
+
+def test_sn_generator_sets_serial_before_run(make_tester):
+    """Generator is called before run; serial_number must be non-empty after run."""
+    t = make_tester(DUTS_SN_GENERATOR)
+    assert t.serial_number == ''  # empty before first run
+    _run_and_wait(t)
+    assert t.serial_number != ''
+
+
+def test_sn_generator_produces_expected_format(make_tester):
+    """SequentialSNGenerator produces SN-0001 on first invocation."""
+    t = make_tester(DUTS_SN_GENERATOR)
+    _run_and_wait(t)
+    assert t.serial_number == 'SN-0001'
+
+
+def test_sn_generator_increments_across_runs(make_tester):
+    """Generator counter increments on each consecutive run."""
+    t = make_tester(DUTS_SN_GENERATOR)
+    _run_and_wait(t)
+    assert t.serial_number == 'SN-0001'
+    t.select_program(t.active_program.name)
+    _run_and_wait(t)
+    assert t.serial_number == 'SN-0002'
+
+
+def test_sn_generator_serial_stored_in_db(make_tester):
+    """Serial number produced by generator is persisted in the database."""
+    t = make_tester(DUTS_SN_GENERATOR)
+    _run_and_wait(t)
+    run = t.db.get_run(t.db.get_latest_run_id())
+    assert run.serial_number == 'SN-0001'

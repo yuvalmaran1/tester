@@ -27,6 +27,8 @@ export default function TestRunRow({ row }) {
     const result = _.get(row, 'result', 'UNKNOWN');
     const meta   = RESULT_META[result] || DEFAULT_META;
     const runId  = _.get(row, 'run_id', '0');
+    const sn     = _.get(row, 'serial_number', '') || '';
+    const op     = _.get(row, 'operator', '') || '';
 
     return (
         <TableRow sx={{
@@ -70,6 +72,16 @@ export default function TestRunRow({ row }) {
                     style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
                     {_.get(row, 'program', '')}
                 </a>
+            </TableCell>
+
+            {/* Serial Number */}
+            <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: sn ? '#e2e8f0' : '#334155' }}>
+                {sn || '—'}
+            </TableCell>
+
+            {/* Operator */}
+            <TableCell sx={{ fontSize: '0.8rem', color: op ? '#94a3b8' : '#334155' }}>
+                {op || '—'}
             </TableCell>
 
             {/* Start date */}

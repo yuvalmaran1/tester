@@ -165,6 +165,20 @@ class RunExecutorMixin:
         self.run_data = {}
         op = self.current_operator or {}
         self.test_run.operator = op.get('display_name') or op.get('username', '')
+
+        # If the active program has an SN generator, execute it and read the value
+        if self.active_program.sn_generator is not None:
+            try:
+                tc = self.active_program.sn_generator
+                tc.execute(self.run_data)
+                self.serial_number = str(tc.result.value)
+                self.logger.info(f"Generated serial number: {self.serial_number}")
+                self._update_tester()
+            except Exception as exc:
+                self.logger.error(f"Serial number generator failed: {exc}")
+
+        self.test_run.serial_number = self.serial_number
+        self.test_run.config_hash = self.config_hash
         self.test_run.start()
         run_id = self.db.append_run(self.test_run)
         self.test_run.run_id = run_id
@@ -172,6 +186,9 @@ class RunExecutorMixin:
         skip_all = False
 
         self.logger.info(f"Starting Program '{self.active_program.name}'. RunID: {run_id}")
+        if self.serial_number:
+            self.logger.info(f"Serial number: {self.serial_number}")
+        self.logger.info(f"Config hash: {self.config_hash[:12]}…")
 
         self._update_status(f"Executing {self.active_dut.name} Setup")
         if self.dut_setup:

@@ -71,6 +71,8 @@ TestSuite         — setup + list[TestCase] + cleanup
 TestCase (ABC)    — implement _execute(); return value is auto-evaluated
 TestResult (ABC)  — wraps value + tolerance; implements _evaluate()
 TestRun           — in-progress run state; written to DB on completion
+                    - `serial_number` — unit serial number entered by the operator before the run (stored in DB, shown in report and run list)
+                    - `config_hash` — SHA-256 of `duts.json` at run time (stored in DB, shown in report; use to verify which test limits were active)
 ```
 
 **TestCase types** (in `tester/TestResults/`): each pairs a `TestCase` subclass with a `TestResult` subclass:
@@ -124,6 +126,28 @@ Tests live in `tests/`. The `conftest.py` provides:
 - Several `DUTS_*` constants for common test scenarios
 
 `tests/fixtures/fast_tests.py` contains lightweight `TestCase` implementations (instant pass/fail/slow) used by integration tests. The `tests/` directory is added to `sys.path` by `conftest.py` so `duts.json` module references like `"module": "fixtures.fast_tests"` resolve correctly.
+
+## Traceability
+
+Two fields are automatically recorded with every test run for ISO 9001 compliance:
+
+- **Serial number** (`runs.serial_number`): the unit-under-test serial number. Set via the "Unit Serial Number" input in the dashboard UI, or programmatically via `tester.serial_number = 'SN-xxx'` before calling `run()`. Shown in the HTML report and the runs list. Hidden in the UI when a generator is active.
+- **Config hash** (`runs.config_hash`): SHA-256 of `duts.json` at the moment the run starts. Computed automatically; shown (truncated) in the HTML report. Use it to verify that two runs used identical test limits and sequences.
+
+### Serial Number Generator
+
+When the serial number is assigned automatically (e.g. from a database counter or barcode scanner), declare a `StringTestCase` subclass in `duts.json` under the program:
+
+```json
+"sn_generator": {
+    "module": "my_module",
+    "test": "MySnGenerator"
+}
+```
+
+The class must subclass `StringTestCase` and return the serial number string from `_execute()`. It is instantiated once at DUT-load time and re-used across runs (so instance-level state like counters persists). Before each run the framework calls `execute()` and reads `result.value` as the serial number. When a generator is present, the manual serial number input is hidden in the UI.
+
+See `example_tester/sn_generators.py` for a reference implementation.
 
 ## Adding a New Test Case Type
 

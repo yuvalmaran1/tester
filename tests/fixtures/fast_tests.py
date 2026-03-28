@@ -68,6 +68,18 @@ class RunDataReadTest(StringTestCase):
         return run_data.get('written', 'missing')
 
 
+class SequentialSNGenerator(StringTestCase):
+    """Generates serial numbers SN-0001, SN-0002, … for use in tests."""
+
+    def __init__(self, config, assets, suite):
+        super().__init__(config, assets, suite)
+        self._counter = 0
+
+    def _execute(self, config, assets, run_data) -> str:
+        self._counter += 1
+        return f"SN-{self._counter:04d}"
+
+
 class SlowTest(PassFailTestCase):
     """Sleeps long enough that an abort signal can be delivered before the test
     finishes, but short enough that the test suite does not take forever if
