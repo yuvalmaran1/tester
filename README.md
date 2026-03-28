@@ -1,6 +1,22 @@
-# Tester Framework
+<p align="center">
+  <img src="tester/Assets/tester.png" alt="Tester" width="110" />
+</p>
 
-A Python framework for building Hardware-in-the-Loop (HiL) test stations with a built-in web UI.
+<h1 align="center">Tester Framework</h1>
+
+<p align="center">
+  A Python framework for building Hardware-in-the-Loop (HiL) test stations with a built-in web UI.
+</p>
+
+<p align="center">
+  <a href="https://github.com/yuvalmaran1/tester/actions/workflows/tests.yml">
+    <img src="https://github.com/yuvalmaran1/tester/actions/workflows/tests.yml/badge.svg" alt="Tests" />
+  </a>
+  <img src="https://img.shields.io/badge/python-3.10%2B-3776ab?logo=python&logoColor=white" alt="Python 3.10+" />
+  <img src="https://img.shields.io/badge/license-MIT-22c55e" alt="License: MIT" />
+</p>
+
+---
 
 ## What It Is
 
