@@ -2,6 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Git Workflow
+
+- **Never push directly to `main`.** All changes go through a branch + pull request.
+- For each new user request, create a dedicated branch (`git checkout -b feature/<short-name>` or `fix/<short-name>`), make the changes there, and open a PR against `main` when done.
+- Follow-up changes to an in-progress request stay on the same branch — do not open a new branch for every commit in a conversation.
+- After opening a PR, return the PR URL to the user.
+
 ## Repository Overview
 
 This is a **Hardware-in-the-Loop (HiL) test framework** consisting of:
