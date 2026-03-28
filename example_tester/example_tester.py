@@ -67,7 +67,6 @@ class SensorBoardTester(Tester):
             description="Production test system for the Smart Sensor Board (Wi-Fi + BLE, temp/humidity)",
             version="1.0.0",
             db_config="./TestDB.db",
-            setup_file="./setup.json",
             duts_file="./duts.json",
             log_dir=None,
             ui=ui,

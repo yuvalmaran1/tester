@@ -18,7 +18,7 @@ class ExampleTesterPostgreSQL(Tester):
             description="Production Tester with PostgreSQL/Supabase",
             version="0.0.1",
             db_config=db_config,
-            setup_file="./setup.json",
+            station_config_file="./station.json",
             duts_file="./duts.json",
             log_dir=None,
             ui=ui
@@ -26,7 +26,7 @@ class ExampleTesterPostgreSQL(Tester):
 
         super().__init__(cfg)
 
-    def _init(self, setup: dict) -> dict:
+    def _init(self, station_config) -> dict:
         """Initialize tester assets."""
         return {}
 

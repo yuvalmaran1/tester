@@ -151,9 +151,8 @@ class TesterWithDictDuts(Tester):
             name="Dict-DUT Tester",
             version="1.0.0",
             db_config="./results_dict.db",
-            setup_file="./station.json",
-            duts_file="./duts.json",          # still required by TesterConfig
             station_config_file="./station.json",
+            duts_file="./duts.json",
             station_config_class=MyStationConfig,
             ui=ui,
         )
@@ -271,9 +270,8 @@ class TesterWithObjectDuts(Tester):
             name="Object-DUT Tester",
             version="1.0.0",
             db_config="./results_obj.db",
-            setup_file="./station.json",
-            duts_file="./duts.json",          # still required by TesterConfig
             station_config_file="./station.json",
+            duts_file="./duts.json",
             station_config_class=MyStationConfig,
             ui=ui,
         )
