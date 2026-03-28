@@ -66,6 +66,8 @@ class RunExecutorMixin:
             else:
                 ts.setup.execute(self.run_data)
                 skip_testcases = ts.setup.result.result != TestResult.TestEval.PASS
+                if ts.setup.result.result == TestResult.TestEval.ABORTED:
+                    self.abort_run = True
             self.db.append_result(ts.setup.result, run_id)
             self._update_run()
             self._test_done(ts.setup.result.result)
@@ -90,6 +92,8 @@ class RunExecutorMixin:
             else:
                 self._update_status(f"Executing Test Case '{tc.config.name}'")
                 tc.execute(self.run_data)
+                if tc.result.result == TestResult.TestEval.ABORTED:
+                    self.abort_run = True
             self.db.append_result(tc.result, run_id)
             self._update_run()
             self._test_done(tc.result.result)
@@ -172,6 +176,8 @@ class RunExecutorMixin:
             self._update_status(f"Executing Test Case '{self.dut_setup.config.name}'")
             self.dut_setup.execute(self.run_data)
             skip_all = self.dut_setup.result.result != TestResult.TestEval.PASS
+            if self.dut_setup.result.result == TestResult.TestEval.ABORTED:
+                self.abort_run = True
             self.db.append_result(self.dut_setup.result, run_id)
             self._update_run()
             self._test_done(self.dut_setup.result.result)

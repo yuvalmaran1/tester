@@ -113,7 +113,8 @@ class AssignSerialNumberTest(PassFailTestCase):
             responses=[TestDialog.Response.Ok, TestDialog.Response.Cancel],
         )
 
-        if response != TestDialog.Response.Ok:
+        # display() returns {"rsp": "Ok"} / {"rsp": "Cancel"} (dict from the frontend)
+        if (response or {}).get("rsp") != TestDialog.Response.Ok.name:
             TestLogger().warning("Operator cancelled serial number entry — aborting run")
             raise AbortRunException("Operator cancelled serial number entry")
 
