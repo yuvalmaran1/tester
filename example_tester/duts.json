@@ -1,132 +1,278 @@
 {
+    // Smart Sensor Board — DUT and test program definitions.
+    //
+    // Test programs
+    // ─────────────
+    // Quick Sanity    Power + Firmware (pre-test screen, ~30 s)
+    // Full Production All suites in sequence (complete factory test, ~3 min)
+    // Calibration Only Sensors + Calibration (re-calibration jig, ~1 min)
+    //
+    // Suite execution order within Full Production:
+    //   Power Rails → Firmware → Memory → Sensors → Connectivity →
+    //   Calibration → Programming
+    //
+    // attr merge chain (later wins):
+    //   TestCase defaults → TestSuite.attr → TestProgram.attr → ts_attr override
+    // ──────────────────────────────────────────────────────────────────────────
+
     "duts": [
         {
-            "name": "Example DUT",
-            "description": "Just a DUT for Testing the Framework",
+            "name": "Smart Sensor Board",
+            "description": "Wi-Fi + BLE IoT sensor node with temperature/humidity sensors",
+            "product_id": "SSB-001-A",
             "image": "./assets/example.png",
-            "product_id": "xxxxxxx",
-            "module": "tests.GenericTests",
-            "setup": "DutSetupTest",
-            "cleanup": "DutCleanupTest",
-            "programs": [
-                {
-                    "name": "Sanity",
-                    "description": "Quick Sanity Check",
-                    "attr_schema": {
-                        "type": "object",
-                        "properties": {
-                            "fw_version": {
-                                "type": "string",
-                                "description": "Firmware Version to be Tested"
-                            },
-                            "official_release": {
-                                "type": "boolean",
-                                "description": "Version is a release"
-                            }
-                        }
-                    },
-                    "attr": {
-                        "fw_version": "1.1.1.1",
-                        "official_release": true
-                    },
-                    "testsuites": [
-                        "Versions",
-                        {
-                            "testsuite": "Versions",
-                            "name": "Versions With Comment",
-                            "attr": {
-                                "comment": "This is a comment"
-                            }
-                        },
-                        "Examples"
-                    ]
-                }
-            ],
+
+            // Module that contains DutSetup / DutCleanup
+            "module":  "tests.generic_tests",
+            "setup":   "DutSetup",
+            "cleanup": "DutCleanup",
+
+            // ── Test suite definitions ─────────────────────────────────────
+
             "testsuites": [
+
+                // ── Power Rails ───────────────────────────────────────────
                 {
-                    "name": "Versions",
-                    "module": "tests.GenericTests",
-                    "setup": "SetupTest",
-                    "cleanup": "CleanupTest",
+                    "name": "Power Rails",
+                    "module":  "tests.generic_tests",
+                    "setup":   "SuiteSetup",
+                    "cleanup": "SuiteCleanup",
                     "testcases": [
                         {
-                            "name": "Node Firmware Version",
-                            "module": "tests.VersionTests",
-                            "test": "NodeVersionsTest",
-                            "tolerance": {
-                                "expected": "1.2.0.0"
-                            },
-                            "attr": {
-                                "ver_type": "fw"
-                            }
+                            "name": "3.3 V Rail (PSU)",
+                            "module": "tests.power_tests",
+                            "test": "VoltageRailTest",
+                            "unit": "V",
+                            "tolerance": {"min": 3.234, "max": 3.366},
+                            "attr": {"rail": "3v3"}
                         },
                         {
-                            "name": "Node Hardware Version",
-                            "module": "tests.VersionTests",
-                            "test": "NodeVersionsTest",
-                            "tolerance": {
-                                "expected": "1"
-                            },
-                            "attr": {
-                                "ver_type": "hw"
-                            }
+                            "name": "1.8 V Rail (PSU)",
+                            "module": "tests.power_tests",
+                            "test": "VoltageRailTest",
+                            "unit": "V",
+                            "tolerance": {"min": 1.764, "max": 1.836},
+                            "attr": {"rail": "1v8"}
+                        },
+                        {
+                            "name": "5 V Rail (PSU)",
+                            "module": "tests.power_tests",
+                            "test": "VoltageRailTest",
+                            "unit": "V",
+                            "tolerance": {"min": 4.900, "max": 5.100},
+                            "attr": {"rail": "5v"}
+                        },
+                        {
+                            "name": "3.3 V Rail (DMM)",
+                            "module": "tests.power_tests",
+                            "test": "IndependentVoltageTest",
+                            "unit": "V",
+                            "tolerance": {"min": 3.267, "max": 3.333},
+                            "attr": {"rail": "3v3"}
+                        },
+                        {
+                            "name": "Idle Current",
+                            "module": "tests.power_tests",
+                            "test": "CurrentDrawTest",
+                            "unit": "mA",
+                            "tolerance": {"min": 30.0, "max": 70.0},
+                            "attr": {"state": "idle"}
+                        },
+                        {
+                            "name": "Active Current",
+                            "module": "tests.power_tests",
+                            "test": "CurrentDrawTest",
+                            "unit": "mA",
+                            "tolerance": {"min": 90.0, "max": 165.0},
+                            "attr": {"state": "active"}
                         }
                     ]
                 },
+
+                // ── Firmware ──────────────────────────────────────────────
                 {
-                    "name": "Examples",
-                    "module": "tests.GenericTests",
-                    "setup": "SetupTest",
-                    "cleanup": "CleanupTest",
+                    "name": "Firmware",
+                    "module":  "tests.generic_tests",
+                    "setup":   "SuiteSetup",
+                    "cleanup": "SuiteCleanup",
                     "testcases": [
                         {
-                            "name": "String Example",
-                            "module": "tests.ExampleTests",
-                            "test": "StringExampleTest",
-                            "tolerance": {
-                                "expected": "Hello, World!"
-                            }
+                            "name": "Firmware Version",
+                            "module": "tests.firmware_tests",
+                            "test": "FirmwareVersionTest",
+                            "tolerance": {"expected": "2.1.4"}
                         },
                         {
-                            "name": "Numeric Example",
-                            "module": "tests.ExampleTests",
-                            "test": "NumericExampleTest",
-                            "tolerance": {
-                                "min": 1.0,
-                                "max": 2.0
-                            }
+                            "name": "Bootloader Version",
+                            "module": "tests.firmware_tests",
+                            "test": "BootloaderVersionTest",
+                            "tolerance": {"expected": "1.0.3"}
                         },
                         {
-                            "name": "Bool Example",
-                            "module": "tests.ExampleTests",
-                            "test": "BoolExampleTest",
-                            "tolerance": {
-                                "expected": true
-                            }
-                        },
-                        {
-                            "name": "Numeric 2d Example",
-                            "module": "tests.ExampleTests",
-                            "test": "Numeric2dExampleTest",
-                            "unit": "Voltage[V]",
-                            "x_unit": "Time[sec]",
-                            "tolerance": {
-                                "min": -1.0,
-                                "max": 1.0
-                            }
-                        },
-                        {
-                            "name": "Numeric 2d Example 2",
-                            "module": "tests.ExampleTests",
-                            "test": "Numeric2dExampleTest2",
-                            "unit": "Voltage[V]",
-                            "x_unit": "Time[sec]",
-                            "tolerance": {
-                                "min": -1.0,
-                                "max": 1.0
-                            }
+                            "name": "Flash CRC",
+                            "module": "tests.firmware_tests",
+                            "test": "FlashIntegrityTest"
                         }
                     ]
+                },
+
+                // ── Memory ────────────────────────────────────────────────
+                {
+                    "name": "Memory",
+                    "module":  "tests.generic_tests",
+                    "setup":   "SuiteSetup",
+                    "cleanup": "SuiteCleanup",
+                    "testcases": [
+                        {
+                            "name": "Flash Write/Verify",
+                            "module": "tests.memory_tests",
+                            "test": "FlashWriteVerifyTest"
+                        },
+                        {
+                            "name": "EEPROM Write/Verify",
+                            "module": "tests.memory_tests",
+                            "test": "EEPROMWriteVerifyTest"
+                        },
+                        {
+                            "name": "RAM Test",
+                            "module": "tests.memory_tests",
+                            "test": "RAMTest"
+                        }
+                    ]
+                },
+
+                // ── Sensors ───────────────────────────────────────────────
+                {
+                    "name": "Sensors",
+                    "module":  "tests.generic_tests",
+                    "setup":   "SuiteSetup",
+                    "cleanup": "SuiteCleanup",
+                    "testcases": [
+                        {
+                            "name": "Temperature Error (raw)",
+                            "module": "tests.sensor_tests",
+                            "test": "TemperatureErrorTest",
+                            "unit": "°C",
+                            "tolerance": {"min": -2.0, "max": 2.0}
+                        },
+                        {
+                            "name": "Humidity Error (raw)",
+                            "module": "tests.sensor_tests",
+                            "test": "HumidityErrorTest",
+                            "unit": "%RH",
+                            "tolerance": {"min": -3.0, "max": 3.0}
+                        },
+                        {
+                            "name": "Temperature Noise Sweep",
+                            "module": "tests.sensor_tests",
+                            "test": "TemperatureSweepTest",
+                            "unit": "°C",
+                            "x_unit": "Sample",
+                            "tolerance": {"min": -3.0, "max": 3.0},
+                            "attr": {"n_samples": 20}
+                        }
+                    ]
+                },
+
+                // ── Connectivity ──────────────────────────────────────────
+                {
+                    "name": "Connectivity",
+                    "module":  "tests.generic_tests",
+                    "setup":   "SuiteSetup",
+                    "cleanup": "SuiteCleanup",
+                    "testcases": [
+                        {
+                            "name": "UART Loopback",
+                            "module": "tests.connectivity_tests",
+                            "test": "UARTLoopbackTest"
+                        },
+                        {
+                            "name": "Wi-Fi RSSI",
+                            "module": "tests.connectivity_tests",
+                            "test": "WiFiRSSITest",
+                            "unit": "dBm",
+                            "tolerance": {"min": -75.0, "max": 0.0}
+                        },
+                        {
+                            "name": "BLE Advertising",
+                            "module": "tests.connectivity_tests",
+                            "test": "BLEAdvertisingTest"
+                        }
+                    ]
+                },
+
+                // ── Calibration ───────────────────────────────────────────
+                // Compute offset → write to DUT NV storage.
+                // run_data carries the offset between the two test cases.
+                {
+                    "name": "Calibration",
+                    "module":  "tests.generic_tests",
+                    "setup":   "SuiteSetup",
+                    "cleanup": "SuiteCleanup",
+                    "testcases": [
+                        {
+                            "name": "Compute Cal Offset",
+                            "module": "tests.programming_tests",
+                            "test": "ComputeCalibrationTest",
+                            "unit": "°C",
+                            "tolerance": {"min": -5.0, "max": 5.0}
+                        },
+                        {
+                            "name": "Write Cal Offset",
+                            "module": "tests.programming_tests",
+                            "test": "WriteCalibrationTest"
+                        }
+                    ]
+                },
+
+                // ── Programming ───────────────────────────────────────────
+                // Operator assigns serial number via UI dialog; test verifies
+                // the NV write-back.
+                {
+                    "name": "Programming",
+                    "module":  "tests.generic_tests",
+                    "setup":   "SuiteSetup",
+                    "cleanup": "SuiteCleanup",
+                    "testcases": [
+                        {
+                            "name": "Assign Serial Number",
+                            "module": "tests.programming_tests",
+                            "test": "AssignSerialNumberTest"
+                        },
+                        {
+                            "name": "Verify Serial Number",
+                            "module": "tests.programming_tests",
+                            "test": "VerifySerialNumberTest"
+                        }
+                    ]
+                }
+            ],
+
+            // ── Test programs ──────────────────────────────────────────────
+
+            "programs": [
+                {
+                    "name": "Quick Sanity",
+                    "description": "Fast pre-production screen: power and firmware only (~30 s)",
+                    "testsuites": ["Power Rails", "Firmware"]
+                },
+                {
+                    "name": "Full Production",
+                    "description": "Complete factory test sequence including calibration and programming (~3 min)",
+                    "testsuites": [
+                        "Power Rails",
+                        "Firmware",
+                        "Memory",
+                        "Sensors",
+                        "Connectivity",
+                        "Calibration",
+                        "Programming"
+                    ]
+                },
+                {
+                    "name": "Calibration Only",
+                    "description": "Re-calibration jig: sensor accuracy + calibration write (~1 min)",
+                    "testsuites": ["Sensors", "Calibration"]
                 }
             ]
         }

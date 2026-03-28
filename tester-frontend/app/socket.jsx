@@ -9,7 +9,8 @@ export const socket = io(URL, {
     autoConnect: true,
     reconnection: true,
     reconnectionDelay: 1000,
-    reconnectionAttempts: 5,
+    reconnectionDelayMax: 5000,
+    reconnectionAttempts: Infinity,
     timeout: 20000
 });
 export const SocketContext = React.createContext();

@@ -17,10 +17,13 @@ import * as React from 'react';
 export default function TestDialog(props) {
     const { onClose, data } = props;
     const [responseData, setResponseData] = React.useState(_.get(data, 'defaults', {}));
+    const show = _.get(data, 'show', false);
 
     React.useEffect(() => {
-        setResponseData(_.get(data, 'defaults', {}));
-    }, [data]);
+        if (show) {
+            setResponseData(_.get(data, 'defaults', {}));
+        }
+    }, [show]);
 
     const handleClose = () => {
         /* ignore */

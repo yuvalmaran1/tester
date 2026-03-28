@@ -244,7 +244,6 @@ def make_tester(tmp_path):
             description="Testing",
             version="0.0.1",
             db_config=str(subdir / "test.db"),
-            setup_file=str(subdir / "station.json"),
             station_config_file=str(subdir / "station.json"),
             duts_file=str(subdir / "duts.json"),
             log_dir=None,
