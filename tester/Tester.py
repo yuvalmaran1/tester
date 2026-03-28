@@ -148,6 +148,9 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
             # Program-level attributes should override existing ones (including DUT defaults)
             # Keep the rest of the attribute hierarchy unchanged
             self.run_attr = self.active_dut.attr | self.active_program.attr
+            # Pre-fill serial number with the program's default (operator can still override)
+            self.serial_number = self.active_program.default_serial_number
+            self._update_tester(emit=False)
         self._create_run()
         self._reset_stats(total=len(self.test_run.test_results))
         self._update_program()

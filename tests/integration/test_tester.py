@@ -164,7 +164,7 @@ DUTS_SUITE_SETUP_FAIL = {
         "description": "DUT",
         "image": "", "product_id": "x", "attr": {},
         "programs": [{"name": "Test Program", "description": "", "attr": {},
-                      "testsuites": ["FailSetupSuite"]}],
+                      "default_serial_number": "TEST-SN", "testsuites": ["FailSetupSuite"]}],
         "testsuites": [{
             "name": "FailSetupSuite",
             "module": "fixtures.fast_tests",
@@ -405,9 +405,10 @@ def test_config_hash_is_sha256_hex(make_tester):
     assert all(c in '0123456789abcdef' for c in t.config_hash)
 
 
-def test_serial_number_default_empty(make_tester):
+def test_serial_number_default_from_program(make_tester):
+    """Serial number is pre-filled from program's default_serial_number on selection."""
     t = make_tester()
-    assert t.serial_number == ''
+    assert t.serial_number == 'TEST-SN'
 
 
 def test_run_stores_serial_number(make_tester):
@@ -430,14 +431,12 @@ def test_run_stores_config_hash(make_tester):
     assert len(run.config_hash) == 64
 
 
-def test_run_empty_serial_if_not_set(make_tester):
-    """When no serial number is set, run stores empty string."""
+def test_run_raises_when_serial_number_empty(make_tester):
+    """run() must raise ValueError when no SN generator is active and serial number is empty."""
     t = make_tester()
-    assert t.serial_number == ''
-    t.run()
-    t.wait_for_test_end()
-    run = t.db.get_run(t.db.get_latest_run_id())
-    assert run.serial_number == '' or run.serial_number is None
+    t.serial_number = ''
+    with pytest.raises(ValueError, match="serial number"):
+        t.run()
 
 
 # ── SN Generator ──────────────────────────────────────────────────────────────

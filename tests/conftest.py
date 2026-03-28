@@ -58,6 +58,7 @@ DUTS_STANDARD = {
             "name": "Test Program",
             "description": "Test program",
             "attr": {"prog_key": "prog_value", "read_key": "from_program"},
+            "default_serial_number": "TEST-SN",
             "testsuites": ["Suite1"]
         }],
         "testsuites": [{
@@ -99,6 +100,7 @@ DUTS_DUT_SETUP_FAIL = {
             "name": "Test Program",
             "description": "Test program",
             "attr": {},
+            "default_serial_number": "TEST-SN",
             "testsuites": ["Suite1"]
         }],
         "testsuites": [{
@@ -128,6 +130,7 @@ DUTS_SLOW = {
             "name": "Test Program",
             "description": "Test program",
             "attr": {},
+            "default_serial_number": "TEST-SN",
             "testsuites": ["SlowSuite"]
         }],
         "testsuites": [{
@@ -164,6 +167,7 @@ DUTS_ATTR_READ = {
             "name": "Test Program",
             "description": "Test program",
             "attr": {"read_key": "from_program"},
+            "default_serial_number": "TEST-SN",
             "testsuites": ["AttrSuite"]
         }],
         "testsuites": [{
@@ -192,6 +196,7 @@ DUTS_RUN_DATA = {
             "name": "Test Program",
             "description": "Test program",
             "attr": {},
+            "default_serial_number": "TEST-SN",
             "testsuites": ["RunDataSuite"]
         }],
         "testsuites": [{
