@@ -23,6 +23,7 @@ import _ from 'lodash';
 import Link from 'next/link';
 import * as React from 'react';
 import LogModal from './components/LogModal';
+import LoginDialog from './components/LoginDialog';
 import TestDialog from './components/TestDialog';
 import TestResultRow from './components/TestResultRow';
 import { useConnection } from './contexts/ConnectionContext';
@@ -50,12 +51,13 @@ export default function Home() {
     const [showLog, setShowLog] = React.useState(false);
     const [log, setLog] = React.useState([]);
     const [showAttr, setShowAttr] = React.useState(false);
+    const [operator, setOperator] = React.useState(undefined); // undefined = not yet received
 
     React.useEffect(() => calcProgress(tester), [tester]);
     React.useEffect(() => getState(), []);
 
     React.useEffect(() => {
-        const handleTester = (data) => setTester(data);
+        const handleTester = (data) => { setTester(data); setOperator(data?.operator ?? null); };
         const handleActiveDut = (data) => setActiveDut(data);
         const handleActiveProgram = (data) => {
             setActiveProgram(data);
@@ -73,7 +75,9 @@ export default function Home() {
         };
         const handleLogClear = () => setLog([]);
         const handleState = (data) => {
-            setTester(_.get(data, 'tester', {}));
+            const t = _.get(data, 'tester', {});
+            setTester(t);
+            setOperator(t?.operator ?? null);
             setDuts(_.get(data, 'duts', []));
             setPrograms(_.get(data, 'programs', []));
             setActiveDut(_.get(data, 'dut', {}));
@@ -142,6 +146,8 @@ export default function Home() {
 
     return (
         <SocketContext.Provider value={socket}>
+            <LoginDialog show={operator === null} />
+
             {/* Offline overlay */}
             <Backdrop
                 open={!isOnline}

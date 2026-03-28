@@ -119,6 +119,38 @@ class DatabaseInterface(ABC):
 
         return filters, params
 
+    # ── Operator management ───────────────────────────────────────────────────
+
+    @abstractmethod
+    def list_operators(self) -> list:
+        """Return all operators as a list of dicts."""
+        pass
+
+    @abstractmethod
+    def get_operator_by_username(self, username: str) -> dict | None:
+        """Return a single operator dict (including password_hash) or None."""
+        pass
+
+    @abstractmethod
+    def add_operator(self, username: str, display_name: str, password_hash: str, role: str = 'operator') -> dict:
+        """Insert a new operator and return it as a dict."""
+        pass
+
+    @abstractmethod
+    def update_operator(self, operator_id: int, display_name: str, role: str, active: bool) -> dict:
+        """Update display_name, role and active flag; return updated dict."""
+        pass
+
+    @abstractmethod
+    def update_operator_password(self, operator_id: int, password_hash: str) -> None:
+        """Replace the password hash for an operator."""
+        pass
+
+    @abstractmethod
+    def delete_operator(self, operator_id: int) -> None:
+        """Permanently delete an operator."""
+        pass
+
     @abstractmethod
     def close(self) -> None:
         """Close database connection."""

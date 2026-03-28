@@ -59,6 +59,7 @@ class StateManagerMixin:
             "skip": self.test_stats['SKIPPED'],
             "aborted": self.test_stats['ABORTED'],
             "dialog": self.dialog.encode(),
+            "operator": self.current_operator,
         }
         if emit:
             self.interface.emit_event(TesterRequest.Tester.value, self.state['tester'])

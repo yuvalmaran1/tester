@@ -15,6 +15,7 @@ class TesterConfig:
     version: str = field(default='0.0.0')
     station_config_class: Optional[Type] = field(default=None)
     debug_reload: bool = field(default=False)
+    require_login: bool = field(default=True)
 
     # Backward compatibility property
     @property

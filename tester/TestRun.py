@@ -25,6 +25,7 @@ class TestRun:
         self.attachment = io.BytesIO()
         self.attachments_exist = False
         self.program_modified = False  # Boolean flag indicating if program was modified
+        self.operator = ''            # Username of the operator who started the run
 
     def start(self):
         self.start_date = datetime.now(tz=None)
@@ -105,5 +106,6 @@ class TestRun:
             run.attachment.write(d['attachment'])
         run.attachments_exist = len(run.attachment.getbuffer()) > 0
         run.program_modified = d.get('program_modified', False)
+        run.operator = d.get('operator', '')
 
         return run

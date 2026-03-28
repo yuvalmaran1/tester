@@ -23,6 +23,7 @@ export default function TestDialog(props) {
         if (show) {
             setResponseData(_.get(data, 'defaults', {}));
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [show]);
 
     const handleClose = () => {

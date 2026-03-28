@@ -12,12 +12,15 @@ class SQLiteDatabase(DatabaseInterface):
     """SQLite database implementation."""
 
     RUNS_TABLE = "runs"
-    RUNS_COLS_DEF = "run_id integer primary key autoincrement, tester text, tester_ver text, dut text, dut_desc text, dut_product_id text, dut_image text, program text, program_desc text, start_date text, end_date text, result text, log text, attachment blob, program_modified integer, program_attr text"
-    RUNS_COLS = "tester, tester_ver, dut, dut_desc, dut_product_id, dut_image, program, program_desc, start_date, end_date, result, log, attachment, program_modified, program_attr"
-    RUNS_REPORT_COLS = "run_id, dut, program, start_date, end_date, result"
+    RUNS_COLS_DEF = "run_id integer primary key autoincrement, tester text, tester_ver text, dut text, dut_desc text, dut_product_id text, dut_image text, program text, program_desc text, start_date text, end_date text, result text, log text, attachment blob, program_modified integer, program_attr text, operator text"
+    RUNS_COLS = "tester, tester_ver, dut, dut_desc, dut_product_id, dut_image, program, program_desc, start_date, end_date, result, log, attachment, program_modified, program_attr, operator"
+    RUNS_REPORT_COLS = "run_id, dut, program, start_date, end_date, result, operator"
     RESULT_TABLE = "results"
     RESULT_COLS_DEF = "result_id integer primary key autoincrement, run_id integer, date text, suite text, name text, tolerance text, value text, unit text, result text, comment text, infoonly integer, skip integer, attr text, result_type text, role text"
     RESULT_COLS = "run_id, date, suite, name, tolerance, value, unit, result, comment, infoonly, skip, attr, result_type, role"
+    OPERATORS_TABLE = "operators"
+    OPERATORS_COLS_DEF = "operator_id integer primary key autoincrement, username text unique not null, display_name text, password_hash text, role text default 'operator', active integer default 1"
+    OPERATORS_COLS = "username, display_name, password_hash, role, active"
 
     def __init__(self, config_string: str):
         """Initialize SQLite database connection.
@@ -47,6 +50,9 @@ class SQLiteDatabase(DatabaseInterface):
             # Create results table
             cursor.execute(f'CREATE TABLE IF NOT EXISTS {self.RESULT_TABLE}({self.RESULT_COLS_DEF})')
 
+            # Create operators table
+            cursor.execute(f'CREATE TABLE IF NOT EXISTS {self.OPERATORS_TABLE}({self.OPERATORS_COLS_DEF})')
+
             # Check if program_modified column exists, add it if not (migration)
             cursor.execute(f"PRAGMA table_info({self.RUNS_TABLE})")
             columns = [column[1] for column in cursor.fetchall()]
@@ -58,6 +64,11 @@ class SQLiteDatabase(DatabaseInterface):
             if 'program_attr' not in columns:
                 cursor.execute(f'ALTER TABLE {self.RUNS_TABLE} ADD COLUMN program_attr text')
                 print("Added program_attr column to existing database")
+
+            # Check if operator column exists, add it if not (migration)
+            if 'operator' not in columns:
+                cursor.execute(f'ALTER TABLE {self.RUNS_TABLE} ADD COLUMN operator text')
+                print("Added operator column to existing database")
 
             # Check if role column exists in results table, add it if not (migration)
             cursor.execute(f"PRAGMA table_info({self.RESULT_TABLE})")
@@ -75,8 +86,9 @@ class SQLiteDatabase(DatabaseInterface):
             entities = (run.tester, run.tester_ver, run.dut, run.dut_desc, run.dut_product_id,
                        run.dut_image, run.program, run.program_desc, str(run.start_date),
                        str(run.end_date), str(run.result), json.dumps(run.log), run.attachment.getvalue(),
-                       int(getattr(run, 'program_modified', False)), json.dumps(getattr(run, 'program_attr', {})))
-            cursor.execute(f'INSERT INTO {self.RUNS_TABLE}({self.RUNS_COLS}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', entities)
+                       int(getattr(run, 'program_modified', False)), json.dumps(getattr(run, 'program_attr', {})),
+                       getattr(run, 'operator', ''))
+            cursor.execute(f'INSERT INTO {self.RUNS_TABLE}({self.RUNS_COLS}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', entities)
             run_id = cursor.lastrowid
             con.commit()
             return run_id
@@ -227,6 +239,55 @@ class SQLiteDatabase(DatabaseInterface):
                     continue
 
             return results_list
+
+    # ── Operator management ───────────────────────────────────────────────────
+
+    def list_operators(self) -> list:
+        with self._connect() as con:
+            cursor = con.cursor()
+            cursor.execute(f'SELECT operator_id, username, display_name, role, active FROM {self.OPERATORS_TABLE} ORDER BY username')
+            rows = cursor.fetchall()
+            return [{'id': r[0], 'username': r[1], 'display_name': r[2], 'role': r[3], 'active': bool(r[4])} for r in rows]
+
+    def get_operator_by_username(self, username: str) -> dict | None:
+        with self._connect() as con:
+            cursor = con.cursor()
+            cursor.execute(f'SELECT operator_id, username, display_name, password_hash, role, active FROM {self.OPERATORS_TABLE} WHERE username = ?', (username,))
+            row = cursor.fetchone()
+            if not row:
+                return None
+            return {'id': row[0], 'username': row[1], 'display_name': row[2], 'password_hash': row[3], 'role': row[4], 'active': bool(row[5])}
+
+    def add_operator(self, username: str, display_name: str, password_hash: str, role: str = 'operator') -> dict:
+        with self._connect() as con:
+            cursor = con.cursor()
+            cursor.execute(f'INSERT INTO {self.OPERATORS_TABLE}({self.OPERATORS_COLS}) VALUES(?,?,?,?,?)',
+                           (username, display_name, password_hash, role, 1))
+            op_id = cursor.lastrowid
+            con.commit()
+            return {'id': op_id, 'username': username, 'display_name': display_name, 'role': role, 'active': True}
+
+    def update_operator(self, operator_id: int, display_name: str, role: str, active: bool) -> dict:
+        with self._connect() as con:
+            cursor = con.cursor()
+            cursor.execute(f'UPDATE {self.OPERATORS_TABLE} SET display_name=?, role=?, active=? WHERE operator_id=?',
+                           (display_name, role, int(active), operator_id))
+            con.commit()
+            cursor.execute(f'SELECT operator_id, username, display_name, role, active FROM {self.OPERATORS_TABLE} WHERE operator_id=?', (operator_id,))
+            row = cursor.fetchone()
+            return {'id': row[0], 'username': row[1], 'display_name': row[2], 'role': row[3], 'active': bool(row[4])}
+
+    def update_operator_password(self, operator_id: int, password_hash: str) -> None:
+        with self._connect() as con:
+            cursor = con.cursor()
+            cursor.execute(f'UPDATE {self.OPERATORS_TABLE} SET password_hash=? WHERE operator_id=?', (password_hash, operator_id))
+            con.commit()
+
+    def delete_operator(self, operator_id: int) -> None:
+        with self._connect() as con:
+            cursor = con.cursor()
+            cursor.execute(f'DELETE FROM {self.OPERATORS_TABLE} WHERE operator_id=?', (operator_id,))
+            con.commit()
 
     def close(self) -> None:
         """Close database connection (no-op for SQLite as we use context managers)."""
