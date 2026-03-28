@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="tester/Assets/tester.png" alt="Tester" width="110" />
+  <img src="tester/Assets/logo.png" alt="Tester" width="200" />
 </p>
 
 <h1 align="center">Tester Framework</h1>
