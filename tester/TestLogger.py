@@ -1,10 +1,35 @@
+import inspect
 import logging
 import sys
 import datetime
 from .Singleton import Singleton
 
+
+_THIS_FILE = __file__
+
+
+class _ClassNameFilter(logging.Filter):
+    """Adds a ``classname`` attribute to each LogRecord.
+
+    Walks the call stack skipping frames from this file and Python's logging
+    internals, then uses the class name of the first ``self`` found.  Falls
+    back to the module name for module-level (non-method) log calls.
+    """
+    def filter(self, record):
+        for frame_info in inspect.stack():
+            fname = frame_info.filename
+            if fname == _THIS_FILE or 'logging' in fname:
+                continue
+            caller_self = frame_info.frame.f_locals.get('self')
+            if caller_self is not None:
+                record.classname = type(caller_self).__name__
+                return True
+        record.classname = record.module
+        return True
+
+
 class TestLogger(metaclass=Singleton):
-    _fmt = logging.Formatter('[%(asctime)s.%(msecs)03d] - %(module)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    _fmt = logging.Formatter('[%(asctime)s.%(msecs)03d] - %(classname)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
     def __init__(self, name: str = 'TestLogger', dirname: str = './logs'):
         # __init__ is called every time, but Singleton.__call__ returns the existing
@@ -15,6 +40,7 @@ class TestLogger(metaclass=Singleton):
         self._dirname = dirname
         self._logger = logging.Logger(name)
         self._logger.setLevel(logging.DEBUG)
+        self._logger.addFilter(_ClassNameFilter())
         sh = logging.StreamHandler(sys.stdout)
         sh.setFormatter(self._fmt)
         self._logger.addHandler(sh)
