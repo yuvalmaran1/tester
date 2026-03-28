@@ -27,6 +27,27 @@ The Tester Framework provides the scaffolding for production and lab test statio
 - Lab regression suites for embedded hardware
 - Any scenario requiring a repeatable, structured test sequence with a live operator UI and historical data
 
+## Concepts
+
+| Term | What it is |
+|---|---|
+| **DUT** (Device Under Test) | The physical hardware being tested — e.g. a PCB revision or product variant. Holds the list of test suites available for that device and optional DUT-level setup/cleanup steps. |
+| **Test Suite** | A named, reusable group of test cases, with optional setup and cleanup steps that run before and after the group. A suite encapsulates one logical area of testing (e.g. *Power Rails*, *Connectivity*). |
+| **Test Case** | A single measurement or check. You subclass one of the built-in types (`NumericTestCase`, `StringTestCase`, `BoolTestCase`, …), implement `_execute()`, and return the measured value. The framework evaluates it against the declared tolerance and records PASS / FAIL / ERROR. |
+| **Program** | An ordered selection of test suites drawn from a DUT's suite library. One DUT can have multiple programs for different workflows — e.g. *Quick Sanity* (two suites, ~30 s) and *Full Production* (all suites, ~3 min). |
+| **Run** | A single execution of a program against a DUT. Each run is persisted in the database with its results, timestamps, operator, serial number, and config hash. |
+| **Assets** | The dictionary returned by `Tester._init()` — instrument handles, database connections, calibration data, etc. Passed to every test case at execution time. |
+
+```
+DUT  ──┬── Test Suite A  ──┬── setup
+       │                   ├── Test Case 1
+       │                   ├── Test Case 2
+       │                   └── cleanup
+       └── Test Suite B  ── …
+
+Program  ──── ordered subset of the DUT's suites ────► Run
+```
+
 ## Installation
 
 ```bash
