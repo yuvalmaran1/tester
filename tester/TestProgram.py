@@ -14,7 +14,8 @@ class TestProgram:
         self.testsuites: List[TestSuite] = []
         self.attr = {}
         self.attr_schema = {}
-        self.sn_generator = None  # StringTestCase instance, or None for manual UI input
+        self.sn_generator = None       # StringTestCase instance, or None for manual UI input
+        self.default_serial_number = ''  # pre-filled value when program is selected
 
     @staticmethod
     def from_dict(d, test_suits: List[TestSuite], assets=None, debug_reload: bool = False):
@@ -23,6 +24,7 @@ class TestProgram:
         p.description = d.get('description', p.description)
         p.attr = d.get('attr', {})
         p.attr_schema = d.get('attr_schema', {"type": "object", "properties": {}})
+        p.default_serial_number = d.get('default_serial_number', '')
 
         sn_spec = d.get('sn_generator')
         if sn_spec:

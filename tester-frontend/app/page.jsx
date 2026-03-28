@@ -144,8 +144,10 @@ export default function Home() {
     const handleDialogClose = (response, responseData) =>
         socket.emit('dialog_response', response, responseData);
 
-    const running  = _.get(tester, 'running',  false);
-    const stopping = _.get(tester, 'stopping', false);
+    const running       = _.get(tester, 'running',  false);
+    const stopping      = _.get(tester, 'stopping', false);
+    const hasSNGenerator = _.get(activeProgram, 'has_sn_generator', false);
+    const snMissing     = !running && !hasSNGenerator && !serialNumber;
 
     const hasAttr = Object.keys(
         _.get(activeProgram, 'attr_schema.properties', {})
@@ -207,20 +209,28 @@ export default function Home() {
                             </IconButton>
 
                             {/* Run / Stop */}
-                            <button
-                                onClick={runProgram}
-                                disabled={stopping}
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 disabled:opacity-40"
-                                style={running
-                                    ? { backgroundColor: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.35)' }
-                                    : { background: 'linear-gradient(135deg,#6366f1,#4338ca)', color: '#fff', border: '1px solid transparent' }
-                                }
-                            >
-                                {running
-                                    ? <><span className="w-2 h-2 rounded-sm" style={{ backgroundColor: '#f87171' }} /> Stop</>
-                                    : <><span>▶</span> Run</>
-                                }
-                            </button>
+                            <div className="relative group">
+                                <button
+                                    onClick={runProgram}
+                                    disabled={stopping || snMissing}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 disabled:opacity-40"
+                                    style={running
+                                        ? { backgroundColor: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.35)' }
+                                        : { background: 'linear-gradient(135deg,#6366f1,#4338ca)', color: '#fff', border: '1px solid transparent' }
+                                    }
+                                >
+                                    {running
+                                        ? <><span className="w-2 h-2 rounded-sm" style={{ backgroundColor: '#f87171' }} /> Stop</>
+                                        : <><span>▶</span> Run</>
+                                    }
+                                </button>
+                                {snMissing && (
+                                    <div className="absolute bottom-full right-0 mb-1.5 px-2 py-1 rounded text-xs whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+                                        style={{ backgroundColor: '#1e293b', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}>
+                                        Serial number required
+                                    </div>
+                                )}
+                            </div>
 
                             {canReport && (
                                 <a
@@ -281,8 +291,8 @@ export default function Home() {
                     {/* Row 2.5: Serial number (hidden when program has a generator) */}
                     {!_.get(activeProgram, 'has_sn_generator', false) && (
                     <div>
-                        <label className="block text-xs font-medium mb-1" style={{ color: '#64748b' }}>
-                            Unit Serial Number
+                        <label className="block text-xs font-medium mb-1" style={{ color: snMissing ? '#f87171' : '#64748b' }}>
+                            Unit Serial Number {snMissing && <span style={{ fontWeight: 400 }}>— required</span>}
                         </label>
                         <input
                             type="text"
@@ -292,7 +302,8 @@ export default function Home() {
                             placeholder="Scan or enter serial number…"
                             style={{
                                 width: '100%', padding: '0.45rem 0.75rem',
-                                background: '#0d1117', border: '1px solid #2d3748',
+                                background: '#0d1117',
+                                border: `1px solid ${snMissing ? 'rgba(239,68,68,0.5)' : '#2d3748'}`,
                                 borderRadius: 6, color: '#e2e8f0', fontSize: '0.875rem',
                                 outline: 'none', opacity: running ? 0.5 : 1,
                             }}

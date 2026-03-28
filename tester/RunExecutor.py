@@ -128,6 +128,9 @@ class RunExecutorMixin:
         if self.running:
             raise RuntimeError("Test already running")
 
+        if self.active_program.sn_generator is None and not self.serial_number:
+            raise ValueError("serial number is required")
+
         self.running = True
         self.abort_run = False
 
