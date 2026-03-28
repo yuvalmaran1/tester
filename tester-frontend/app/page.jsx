@@ -271,7 +271,7 @@ export default function Home() {
                         <STAT label="Pass"    value={_.get(tester,'pass',0)}    color="#10b981" />
                         <STAT label="Fail"    value={_.get(tester,'fail',0)}    color="#ef4444" />
                         <STAT label="Error"   value={_.get(tester,'error',0)}   color="#f59e0b" />
-                        <STAT label="Skipped" value={_.get(tester,'skipped',0)} color="#64748b" />
+                        <STAT label="Skipped" value={_.get(tester,'skip',0)} color="#64748b" />
                         {_.get(tester,'aborted',0) > 0 &&
                             <STAT label="Aborted" value={_.get(tester,'aborted',0)} color="#8b5cf6" />
                         }
