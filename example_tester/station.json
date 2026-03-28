@@ -1,4 +1,10 @@
 {
-    "serial_port": "COM1",
-    "ip_address": "127.0.0.1"
+    // Station-specific configuration for the Smart Sensor Board tester.
+    // Copy this file to each test station and update the values for that station.
+    // The SensorBoardStationConfig Pydantic model validates these fields on startup.
+
+    "psu_address":     "192.168.1.10",   // PSU SCPI-over-LAN address
+    "dmm_address":     "192.168.1.11",   // DMM SCPI-over-LAN address
+    "dut_port":        "COM3",           // DUT serial / test-jig port
+    "reference_temp":  25.0             // Reference sensor ambient temperature (°C)
 }
