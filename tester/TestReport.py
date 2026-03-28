@@ -496,6 +496,7 @@ tbody tr:hover td{background:rgba(99,102,241,.04)}
         dut_pid      = self.run.dut_product_id
         start_str    = self.run.start_date.strftime('%H:%M:%S  %d/%m/%Y')
         dur_str      = self._format_duration(self.run.start_date, self.run.end_date)
+        operator_str = getattr(self.run, 'operator', '') or '—'
 
         css = self._get_css()
 
@@ -572,6 +573,8 @@ tbody tr:hover td{background:rgba(99,102,241,.04)}
             f'<span class="info-value text-mono">{start_str}</span></div>'
             f'<div class="info-item"><span class="info-label">Duration</span>'
             f'<span class="info-value text-mono">{dur_str}</span></div>'
+            f'<div class="info-item"><span class="info-label">Operator</span>'
+            f'<span class="info-value">{operator_str}</span></div>'
             f'</div>'
 
             f'</div>\n'  # end .two-col
