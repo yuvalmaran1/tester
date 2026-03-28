@@ -3,6 +3,7 @@ from typing import List
 from importlib import import_module, reload
 from .TestResult import TestResult
 from .TestCase import TestCase
+from .TestConfig import TestConfig
 from .TestSuite import TestSuite
 
 class TestProgram:
@@ -13,7 +14,7 @@ class TestProgram:
         self.testsuites: List[TestSuite] = []
         self.attr = {}
         self.attr_schema = {}
-        self.sn_generator = None  # SNGenerator instance, or None for manual UI input
+        self.sn_generator = None  # StringTestCase instance, or None for manual UI input
 
     @staticmethod
     def from_dict(d, test_suits: List[TestSuite], assets=None, debug_reload: bool = False):
@@ -28,8 +29,9 @@ class TestProgram:
             mod = import_module(sn_spec['module'])
             if debug_reload:
                 mod = reload(mod)
-            cls = getattr(mod, sn_spec['class'])
-            p.sn_generator = cls(assets)
+            cls = getattr(mod, sn_spec['test'])
+            cfg = TestConfig.from_dict({'name': sn_spec.get('name', 'SN Generator'), 'attr': sn_spec.get('attr', {})})
+            p.sn_generator = cls(cfg, assets or {}, '')
 
 
         for ts_item in d.get('testsuites', []):

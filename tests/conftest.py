@@ -230,7 +230,7 @@ DUTS_SN_GENERATOR = {
             "description": "Test program with SN generator",
             "sn_generator": {
                 "module": "fixtures.fast_tests",
-                "class": "SequentialSNGenerator"
+                "test": "SequentialSNGenerator"
             },
             "testsuites": ["Suite1"]
         }],

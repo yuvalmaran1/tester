@@ -166,10 +166,12 @@ class RunExecutorMixin:
         op = self.current_operator or {}
         self.test_run.operator = op.get('display_name') or op.get('username', '')
 
-        # If the active program has an SN generator, invoke it now
+        # If the active program has an SN generator, execute it and read the value
         if self.active_program.sn_generator is not None:
             try:
-                self.serial_number = self.active_program.sn_generator.generate()
+                tc = self.active_program.sn_generator
+                tc.execute(self.run_data)
+                self.serial_number = str(tc.result.value)
                 self.logger.info(f"Generated serial number: {self.serial_number}")
                 self._update_tester()
             except Exception as exc:

@@ -10,7 +10,6 @@ from tester.TestResult import TestResult
 from tester.TestConfig import TestConfig
 from tester.TestResults.PassFailTestResult import PassFailTestCase
 from tester.TestResults.StringTestResult import StringTestCase
-from tester.SNGenerator import SNGenerator
 
 
 class FastPassTest(PassFailTestCase):
@@ -69,14 +68,14 @@ class RunDataReadTest(StringTestCase):
         return run_data.get('written', 'missing')
 
 
-class SequentialSNGenerator(SNGenerator):
+class SequentialSNGenerator(StringTestCase):
     """Generates serial numbers SN-0001, SN-0002, … for use in tests."""
 
-    def __init__(self, assets):
-        super().__init__(assets)
+    def __init__(self, config, assets, suite):
+        super().__init__(config, assets, suite)
         self._counter = 0
 
-    def generate(self) -> str:
+    def _execute(self, config, assets, run_data) -> str:
         self._counter += 1
         return f"SN-{self._counter:04d}"
 

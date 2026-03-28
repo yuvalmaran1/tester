@@ -263,7 +263,7 @@
                     // input is hidden in the UI when this key is present.
                     "sn_generator": {
                         "module": "sn_generators",
-                        "class": "IncrementalSNGenerator"
+                        "test": "IncrementalSNGenerator"
                     },
                     "testsuites": [
                         "Power Rails",

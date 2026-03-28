@@ -11,4 +11,3 @@ from .TestReport import TestReport
 from .TesterConfig import TesterConfig
 from .StationConfig import StationConfig
 from .database import DatabaseFactory, DatabaseInterface, SQLiteDatabase, PostgreSQLDatabase
-from .SNGenerator import SNGenerator

@@ -136,16 +136,16 @@ Two fields are automatically recorded with every test run for ISO 9001 complianc
 
 ### Serial Number Generator
 
-When the serial number is assigned automatically (e.g. from a database counter or barcode scanner), declare a generator in `duts.json` under the program:
+When the serial number is assigned automatically (e.g. from a database counter or barcode scanner), declare a `StringTestCase` subclass in `duts.json` under the program:
 
 ```json
 "sn_generator": {
     "module": "my_module",
-    "class": "MyGenerator"
+    "test": "MySnGenerator"
 }
 ```
 
-The class must subclass `tester.SNGenerator` and implement `generate() -> str`. It is instantiated once at DUT-load time with `assets` as the only argument. Before each run the framework calls `generate()` and stores the result as the run serial number. When a generator is present, the manual serial number input is hidden in the UI.
+The class must subclass `StringTestCase` and return the serial number string from `_execute()`. It is instantiated once at DUT-load time and re-used across runs (so instance-level state like counters persists). Before each run the framework calls `execute()` and reads `result.value` as the serial number. When a generator is present, the manual serial number input is hidden in the UI.
 
 See `example_tester/sn_generators.py` for a reference implementation.
 
