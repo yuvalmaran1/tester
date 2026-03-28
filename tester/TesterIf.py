@@ -120,6 +120,7 @@ class TesterIf:
         self._add_endpoint(endpoint='/', endpoint_name='/', handler=self.index_handler)
         self._add_endpoint(endpoint='/results', endpoint_name='/results', handler=self.results_handler)
         self._add_endpoint(endpoint='/test-query', endpoint_name='/test-query', handler=self.test_query_handler)
+        self._add_endpoint(endpoint='/admin', endpoint_name='/admin', handler=self.admin_handler)
         self._add_endpoint(endpoint='/manifest.json', endpoint_name='/manifest.json', handler=self.manifest_handler)
         self._add_endpoint(endpoint='/favicon.ico', endpoint_name='/favicon.ico', handler=self.favicon_handler)
         self._add_endpoint(endpoint='/<path:path>', endpoint_name='/<path:path>', handler=self.file_handler)
@@ -151,6 +152,9 @@ class TesterIf:
 
     def test_query_handler(self):
         return render_template("test-query.html")
+
+    def admin_handler(self):
+        return render_template("admin.html")
 
     def favicon_handler(self):
         return send_from_directory(FRONTEND_BUILD_PATH, 'icon.svg', mimetype='image/svg+xml')
