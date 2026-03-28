@@ -26,7 +26,8 @@ setup(
         'numpy',
         'pyjson5>=1.6.4',
         'psycopg2-binary>=2.9.0',
-        'pydantic>=2.0.0'
+        'pydantic>=2.0.0',
+        'bcrypt>=4.0.0'
     ],
     include_package_data=True,
     package_data={'': files}

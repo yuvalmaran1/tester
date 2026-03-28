@@ -163,6 +163,7 @@ class RunExecutorMixin:
         self._reset_stats(total=len(self.test_run.test_results))
         self.active_test = 0
         self.run_data = {}
+        self.test_run.operator = (self.current_operator or {}).get('username', '')
         self.test_run.start()
         run_id = self.db.append_run(self.test_run)
         self.test_run.run_id = run_id

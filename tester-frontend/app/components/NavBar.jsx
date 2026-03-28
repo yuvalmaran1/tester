@@ -42,10 +42,17 @@ export default function Sidebar() {
     const pathname = usePathname();
     const { connected, connecting } = useConnection();
     const [testerName, setTesterName] = useState('');
+    const [operator, setOperator] = useState(null);
 
     useEffect(() => {
-        const onTester = (data) => { if (data?.name) setTesterName(data.name); };
-        const onState  = (data) => { if (data?.tester?.name) setTesterName(data.tester.name); };
+        const onTester = (data) => {
+            if (data?.name) setTesterName(data.name);
+            setOperator(data?.operator ?? null);
+        };
+        const onState = (data) => {
+            if (data?.tester?.name) setTesterName(data.tester.name);
+            setOperator(data?.tester?.operator ?? null);
+        };
         socket.on('tester', onTester);
         socket.on('state',  onState);
         return () => {
@@ -53,6 +60,8 @@ export default function Sidebar() {
             socket.off('state',  onState);
         };
     }, []);
+
+    const handleLogout = () => socket.emit('logout');
 
     return (
         <aside
@@ -107,6 +116,40 @@ export default function Sidebar() {
                     );
                 })}
             </nav>
+
+            {/* Operator info */}
+            {operator && (
+                <div className="px-4 py-3" style={{ borderTop: '1px solid #2d3748' }}>
+                    <div style={{ color: '#8b9eb0', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
+                        Operator
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div style={{ color: '#e2e8f0', fontSize: '0.8rem', fontWeight: 600 }}>
+                                {operator.display_name || operator.username}
+                            </div>
+                            {operator.role === 'admin' && (
+                                <Link href="/admin" style={{ color: '#6366f1', fontSize: '0.65rem', fontWeight: 600 }}>
+                                    Admin Panel
+                                </Link>
+                            )}
+                        </div>
+                        <button
+                            onClick={handleLogout}
+                            title="Logout"
+                            style={{
+                                background: 'none', border: 'none', cursor: 'pointer',
+                                color: '#64748b', padding: 4, borderRadius: 4,
+                            }}
+                        >
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Connection status */}
             <div className="px-4 py-4" style={{ borderTop: '1px solid #2d3748' }}>

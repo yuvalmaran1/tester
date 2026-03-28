@@ -19,6 +19,7 @@ from .TestUtil import AbortRunException, TestDialog, TestAttachment
 from .Dut import Dut
 from .RunExecutor import RunExecutorMixin
 from .StateManager import StateManagerMixin
+from .Operator import hash_password, verify_password
 
 class Tester(RunExecutorMixin, StateManagerMixin, ABC):
     __metaclass__ = ABCMeta
@@ -54,6 +55,15 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         self.active_test = -1
         self.abort_run = False
         self.run_thread = None
+        self.current_operator = None  # dict with id/username/display_name/role or None
+
+        # Seed admin and resolve initial operator
+        self._seed_admin()
+        if not config.require_login:
+            self.current_operator = self.db.get_operator_by_username('admin')
+            if self.current_operator:
+                # Strip password_hash for safety
+                self.current_operator = {k: v for k, v in self.current_operator.items() if k != 'password_hash'}
 
         # interface
         self.interface = TesterIf()
@@ -76,6 +86,13 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         self.interface.request_handler = self._request_handler
         self.interface.dialog_response_handler = self._dialog_response_handler
         self.interface.test_execute_state_handler = self._test_execute_state_handler
+        self.interface.login_handler = self._login_handler
+        self.interface.logout_handler = self._logout_handler
+        self.interface.list_operators_handler = self._list_operators_handler
+        self.interface.add_operator_handler = self._add_operator_handler
+        self.interface.update_operator_handler = self._update_operator_handler
+        self.interface.delete_operator_handler = self._delete_operator_handler
+        self.interface.update_operator_password_handler = self._update_operator_password_handler
         self._generate_state()
         self.select_dut(next(iter(self.duts)).name)
         self.select_program(next(iter(self.active_dut.programs)).name)
@@ -195,6 +212,8 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         return self.state
 
     def _reload_handler(self):
+        if self.config.require_login and (not self.current_operator or self.current_operator.get('role') != 'admin'):
+            return
         dut_name = self.active_dut.name if self.active_dut else next(iter(self.duts)).name
         program_name = self.active_program.name if self.active_program else None
         self.duts = self.populate_duts(json.load(open(self.config.duts_file,'r')))
@@ -287,6 +306,94 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
             else:
                 self._stop_run_handler()
                 return {"code": 200, "data": "Stopping"}
+
+    # ── Operator / authentication helpers ────────────────────────────────────
+
+    def _seed_admin(self):
+        """Create default admin account if no operators exist."""
+        if not self.db.list_operators():
+            self.db.add_operator(
+                username='admin',
+                display_name='Administrator',
+                password_hash=hash_password('admin'),
+                role='admin',
+            )
+            self.logger.info("Created default admin account (username: admin, password: admin)")
+
+    def _login_handler(self, data):
+        username = (data or {}).get('username', '')
+        password = (data or {}).get('password', '')
+        op = self.db.get_operator_by_username(username)
+        if op and op.get('active') and verify_password(password, op.get('password_hash', '')):
+            self.current_operator = {k: v for k, v in op.items() if k != 'password_hash'}
+            self._update_tester()
+            self.interface.emit_event(TesterRequest.LoginResult.value, {'success': True, 'operator': self.current_operator})
+            self.logger.info(f"Operator '{username}' logged in")
+        else:
+            self.interface.emit_event(TesterRequest.LoginResult.value, {'success': False, 'error': 'Invalid username or password'})
+
+    def _logout_handler(self):
+        if self.current_operator:
+            self.logger.info(f"Operator '{self.current_operator['username']}' logged out")
+        self.current_operator = None
+        self._update_tester()
+
+    def _list_operators_handler(self):
+        if not self.current_operator or self.current_operator.get('role') != 'admin':
+            return
+        ops = self.db.list_operators()
+        self.interface.emit_event(TesterRequest.OperatorList.value, ops)
+
+    def _add_operator_handler(self, data):
+        if not self.current_operator or self.current_operator.get('role') != 'admin':
+            return
+        username = (data or {}).get('username', '').strip()
+        display_name = (data or {}).get('display_name', '').strip()
+        password = (data or {}).get('password', '')
+        role = (data or {}).get('role', 'operator')
+        if not username or not password:
+            return
+        try:
+            self.db.add_operator(username, display_name or username, hash_password(password), role)
+            self.interface.emit_event(TesterRequest.OperatorList.value, self.db.list_operators())
+        except Exception as e:
+            self.logger.error(f"Failed to add operator '{username}': {e}")
+
+    def _update_operator_handler(self, data):
+        if not self.current_operator or self.current_operator.get('role') != 'admin':
+            return
+        op_id = (data or {}).get('id')
+        display_name = (data or {}).get('display_name', '')
+        role = (data or {}).get('role', 'operator')
+        active = (data or {}).get('active', True)
+        if op_id is None:
+            return
+        self.db.update_operator(op_id, display_name, role, active)
+        self.interface.emit_event(TesterRequest.OperatorList.value, self.db.list_operators())
+
+    def _delete_operator_handler(self, data):
+        if not self.current_operator or self.current_operator.get('role') != 'admin':
+            return
+        op_id = (data or {}).get('id')
+        if op_id is None:
+            return
+        # Prevent deleting own account
+        if self.current_operator.get('id') == op_id:
+            return
+        self.db.delete_operator(op_id)
+        self.interface.emit_event(TesterRequest.OperatorList.value, self.db.list_operators())
+
+    def _update_operator_password_handler(self, data):
+        if not self.current_operator:
+            return
+        op_id = (data or {}).get('id')
+        password = (data or {}).get('password', '')
+        if op_id is None or not password:
+            return
+        # Operators can only change their own password; admins can change any
+        if self.current_operator.get('role') != 'admin' and self.current_operator.get('id') != op_id:
+            return
+        self.db.update_operator_password(op_id, hash_password(password))
 
     @abstractmethod
     def _init(self, station_config: StationConfig) -> dict:

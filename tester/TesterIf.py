@@ -48,6 +48,15 @@ class TesterRequest(Enum):
     Attr = "attr"
     TestExecuteState = "test_execute_state"
     DialogResponse = "dialog_response"
+    Login = "login"
+    Logout = "logout"
+    LoginResult = "login_result"
+    ListOperators = "list_operators"
+    AddOperator = "add_operator"
+    UpdateOperator = "update_operator"
+    DeleteOperator = "delete_operator"
+    UpdateOperatorPassword = "update_operator_password"
+    OperatorList = "operator_list"
 
 class TesterIf:
     def __init__(self) -> None:
@@ -74,6 +83,13 @@ class TesterIf:
         self.get_available_programs_handler = None
         self.get_available_duts_handler = None
         self.query_test_results_handler = None
+        self.login_handler = None
+        self.logout_handler = None
+        self.list_operators_handler = None
+        self.add_operator_handler = None
+        self.update_operator_handler = None
+        self.delete_operator_handler = None
+        self.update_operator_password_handler = None
         self.register_request('connect', self._connect_handler)
         self.register_request('disconnect', self._disconnect_handler)
         self.register_request(TesterRequest.StartRun.value, self._start_run_handler)
@@ -85,6 +101,13 @@ class TesterIf:
         self.register_request(TesterRequest.Attr.value, self._attr_handler)
         self.register_request(TesterRequest.TestExecuteState.value, self._test_execute_state_handler)
         self.register_request(TesterRequest.DialogResponse.value, self._dialog_response_handler)
+        self.register_request(TesterRequest.Login.value, self._login_handler)
+        self.register_request(TesterRequest.Logout.value, self._logout_handler)
+        self.register_request(TesterRequest.ListOperators.value, self._list_operators_handler)
+        self.register_request(TesterRequest.AddOperator.value, self._add_operator_handler)
+        self.register_request(TesterRequest.UpdateOperator.value, self._update_operator_handler)
+        self.register_request(TesterRequest.DeleteOperator.value, self._delete_operator_handler)
+        self.register_request(TesterRequest.UpdateOperatorPassword.value, self._update_operator_password_handler)
         self._add_endpoints()
         log_handler = SocketLogHandler(self)
         log_handler.setFormatter(TestLogger._fmt)
@@ -283,6 +306,34 @@ class TesterIf:
     def _dialog_response_handler(self, response, data):
         if self.dialog_response_handler:
             self.dialog_response_handler(response, data)
+
+    def _login_handler(self, data):
+        if self.login_handler:
+            self.login_handler(data)
+
+    def _logout_handler(self):
+        if self.logout_handler:
+            self.logout_handler()
+
+    def _list_operators_handler(self):
+        if self.list_operators_handler:
+            self.list_operators_handler()
+
+    def _add_operator_handler(self, data):
+        if self.add_operator_handler:
+            self.add_operator_handler(data)
+
+    def _update_operator_handler(self, data):
+        if self.update_operator_handler:
+            self.update_operator_handler(data)
+
+    def _delete_operator_handler(self, data):
+        if self.delete_operator_handler:
+            self.delete_operator_handler(data)
+
+    def _update_operator_password_handler(self, data):
+        if self.update_operator_password_handler:
+            self.update_operator_password_handler(data)
 
 
 class SocketLogHandler(StreamHandler):

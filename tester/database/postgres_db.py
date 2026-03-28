@@ -12,12 +12,15 @@ class PostgreSQLDatabase(DatabaseInterface):
     """PostgreSQL database implementation with connection pooling."""
 
     RUNS_TABLE = "runs"
-    RUNS_COLS_DEF = "run_id SERIAL PRIMARY KEY, tester TEXT, tester_ver TEXT, dut TEXT, dut_desc TEXT, dut_product_id TEXT, dut_image TEXT, program TEXT, program_desc TEXT, start_date TEXT, end_date TEXT, result TEXT, log TEXT, attachment BYTEA, program_modified BOOLEAN, program_attr TEXT"
-    RUNS_COLS = "tester, tester_ver, dut, dut_desc, dut_product_id, dut_image, program, program_desc, start_date, end_date, result, log, attachment, program_modified, program_attr"
-    RUNS_REPORT_COLS = "run_id, dut, program, start_date, end_date, result"
+    RUNS_COLS_DEF = "run_id SERIAL PRIMARY KEY, tester TEXT, tester_ver TEXT, dut TEXT, dut_desc TEXT, dut_product_id TEXT, dut_image TEXT, program TEXT, program_desc TEXT, start_date TEXT, end_date TEXT, result TEXT, log TEXT, attachment BYTEA, program_modified BOOLEAN, program_attr TEXT, operator TEXT"
+    RUNS_COLS = "tester, tester_ver, dut, dut_desc, dut_product_id, dut_image, program, program_desc, start_date, end_date, result, log, attachment, program_modified, program_attr, operator"
+    RUNS_REPORT_COLS = "run_id, dut, program, start_date, end_date, result, operator"
     RESULT_TABLE = "results"
     RESULT_COLS_DEF = "result_id SERIAL PRIMARY KEY, run_id INTEGER, date TEXT, suite TEXT, name TEXT, tolerance TEXT, value TEXT, unit TEXT, result TEXT, comment TEXT, infoonly INTEGER, skip INTEGER, attr TEXT, result_type TEXT, role TEXT"
     RESULT_COLS = "run_id, date, suite, name, tolerance, value, unit, result, comment, infoonly, skip, attr, result_type, role"
+    OPERATORS_TABLE = "operators"
+    OPERATORS_COLS_DEF = "operator_id SERIAL PRIMARY KEY, username TEXT UNIQUE NOT NULL, display_name TEXT, password_hash TEXT, role TEXT DEFAULT 'operator', active BOOLEAN DEFAULT TRUE"
+    OPERATORS_COLS = "username, display_name, password_hash, role, active"
 
     def __init__(self, config_string: str):
         """Initialize PostgreSQL database connection.
@@ -85,33 +88,29 @@ class PostgreSQLDatabase(DatabaseInterface):
                 # Create results table
                 cursor.execute(f'CREATE TABLE IF NOT EXISTS {self.RESULT_TABLE}({self.RESULT_COLS_DEF})')
 
-                # Check if program_modified column exists, add it if not (migration)
-                cursor.execute(f"""
-                    SELECT column_name
-                    FROM information_schema.columns
-                    WHERE table_name = '{self.RUNS_TABLE}' AND column_name = 'program_modified'
-                """)
-                if not cursor.fetchone():
+                # Create operators table
+                cursor.execute(f'CREATE TABLE IF NOT EXISTS {self.OPERATORS_TABLE}({self.OPERATORS_COLS_DEF})')
+
+                def col_exists(table, col):
+                    cursor.execute(f"""
+                        SELECT column_name FROM information_schema.columns
+                        WHERE table_name = '{table}' AND column_name = '{col}'
+                    """)
+                    return cursor.fetchone() is not None
+
+                if not col_exists(self.RUNS_TABLE, 'program_modified'):
                     cursor.execute(f'ALTER TABLE {self.RUNS_TABLE} ADD COLUMN program_modified BOOLEAN')
                     print("Added program_modified column to existing PostgreSQL database")
 
-                # Check if program_attr column exists, add it if not (migration)
-                cursor.execute(f"""
-                    SELECT column_name
-                    FROM information_schema.columns
-                    WHERE table_name = '{self.RUNS_TABLE}' AND column_name = 'program_attr'
-                """)
-                if not cursor.fetchone():
+                if not col_exists(self.RUNS_TABLE, 'program_attr'):
                     cursor.execute(f'ALTER TABLE {self.RUNS_TABLE} ADD COLUMN program_attr TEXT')
                     print("Added program_attr column to existing PostgreSQL database")
 
-                # Check if role column exists in results table, add it if not (migration)
-                cursor.execute(f"""
-                    SELECT column_name
-                    FROM information_schema.columns
-                    WHERE table_name = '{self.RESULT_TABLE}' AND column_name = 'role'
-                """)
-                if not cursor.fetchone():
+                if not col_exists(self.RUNS_TABLE, 'operator'):
+                    cursor.execute(f'ALTER TABLE {self.RUNS_TABLE} ADD COLUMN operator TEXT')
+                    print("Added operator column to existing PostgreSQL database")
+
+                if not col_exists(self.RESULT_TABLE, 'role'):
                     cursor.execute(f"ALTER TABLE {self.RESULT_TABLE} ADD COLUMN role TEXT DEFAULT 'testcase'")
                     print("Added role column to existing PostgreSQL database")
 
@@ -127,8 +126,9 @@ class PostgreSQLDatabase(DatabaseInterface):
                 entities = (run.tester, run.tester_ver, run.dut, run.dut_desc, run.dut_product_id,
                            run.dut_image, run.program, run.program_desc, run.start_date,
                            run.end_date, str(run.result), json.dumps(run.log), run.attachment.getvalue(),
-                           getattr(run, 'program_modified', False), json.dumps(getattr(run, 'program_attr', {})))
-                cursor.execute(f'INSERT INTO {self.RUNS_TABLE}({self.RUNS_COLS}) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING run_id', entities)
+                           getattr(run, 'program_modified', False), json.dumps(getattr(run, 'program_attr', {})),
+                           getattr(run, 'operator', ''))
+                cursor.execute(f'INSERT INTO {self.RUNS_TABLE}({self.RUNS_COLS}) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING run_id', entities)
                 run_id = cursor.fetchone()[0]
                 conn.commit()
                 return run_id
@@ -303,6 +303,73 @@ class PostgreSQLDatabase(DatabaseInterface):
                         continue
 
                 return results_list
+        finally:
+            self._return_connection(conn)
+
+    # ── Operator management ───────────────────────────────────────────────────
+
+    def list_operators(self) -> list:
+        conn = self._get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(f'SELECT operator_id, username, display_name, role, active FROM {self.OPERATORS_TABLE} ORDER BY username')
+                rows = cursor.fetchall()
+                return [{'id': r[0], 'username': r[1], 'display_name': r[2], 'role': r[3], 'active': bool(r[4])} for r in rows]
+        finally:
+            self._return_connection(conn)
+
+    def get_operator_by_username(self, username: str) -> dict | None:
+        conn = self._get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(f'SELECT operator_id, username, display_name, password_hash, role, active FROM {self.OPERATORS_TABLE} WHERE username = %s', (username,))
+                row = cursor.fetchone()
+                if not row:
+                    return None
+                return {'id': row[0], 'username': row[1], 'display_name': row[2], 'password_hash': row[3], 'role': row[4], 'active': bool(row[5])}
+        finally:
+            self._return_connection(conn)
+
+    def add_operator(self, username: str, display_name: str, password_hash: str, role: str = 'operator') -> dict:
+        conn = self._get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(f'INSERT INTO {self.OPERATORS_TABLE}({self.OPERATORS_COLS}) VALUES(%s,%s,%s,%s,%s) RETURNING operator_id',
+                               (username, display_name, password_hash, role, True))
+                op_id = cursor.fetchone()[0]
+                conn.commit()
+                return {'id': op_id, 'username': username, 'display_name': display_name, 'role': role, 'active': True}
+        finally:
+            self._return_connection(conn)
+
+    def update_operator(self, operator_id: int, display_name: str, role: str, active: bool) -> dict:
+        conn = self._get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(f'UPDATE {self.OPERATORS_TABLE} SET display_name=%s, role=%s, active=%s WHERE operator_id=%s',
+                               (display_name, role, active, operator_id))
+                cursor.execute(f'SELECT operator_id, username, display_name, role, active FROM {self.OPERATORS_TABLE} WHERE operator_id=%s', (operator_id,))
+                row = cursor.fetchone()
+                conn.commit()
+                return {'id': row[0], 'username': row[1], 'display_name': row[2], 'role': row[3], 'active': bool(row[4])}
+        finally:
+            self._return_connection(conn)
+
+    def update_operator_password(self, operator_id: int, password_hash: str) -> None:
+        conn = self._get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(f'UPDATE {self.OPERATORS_TABLE} SET password_hash=%s WHERE operator_id=%s', (password_hash, operator_id))
+                conn.commit()
+        finally:
+            self._return_connection(conn)
+
+    def delete_operator(self, operator_id: int) -> None:
+        conn = self._get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(f'DELETE FROM {self.OPERATORS_TABLE} WHERE operator_id=%s', (operator_id,))
+                conn.commit()
         finally:
             self._return_connection(conn)
 

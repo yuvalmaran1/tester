@@ -55,6 +55,26 @@ class TestDB:
         """Query test results with filters."""
         return self.db.query_test_results(query_params)
 
+    # ── Operator management ───────────────────────────────────────────────────
+
+    def list_operators(self) -> list:
+        return self.db.list_operators()
+
+    def get_operator_by_username(self, username: str) -> dict | None:
+        return self.db.get_operator_by_username(username)
+
+    def add_operator(self, username: str, display_name: str, password_hash: str, role: str = 'operator') -> dict:
+        return self.db.add_operator(username, display_name, password_hash, role)
+
+    def update_operator(self, operator_id: int, display_name: str, role: str, active: bool) -> dict:
+        return self.db.update_operator(operator_id, display_name, role, active)
+
+    def update_operator_password(self, operator_id: int, password_hash: str) -> None:
+        self.db.update_operator_password(operator_id, password_hash)
+
+    def delete_operator(self, operator_id: int) -> None:
+        self.db.delete_operator(operator_id)
+
     def close(self) -> None:
         """Close database connection."""
         self.db.close()
