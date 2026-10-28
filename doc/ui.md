@@ -1,6 +1,24 @@
 # User Interface
 
-The web UI is served by the Flask backend on `http://localhost:5050`. It has three pages reachable via the top navigation bar.
+The web UI is served by the Flask backend on port 5050. It has three pages reachable via the top navigation bar.
+
+## HTTPS
+
+Report links are relative to the current UI address. If the UI is opened over plain HTTP, PDF downloads are also transferred over HTTP and browsers may warn that the file was loaded over an insecure connection. A link change cannot secure that transfer; the server itself must use TLS.
+
+For direct TLS, configure a certificate and its private key together:
+
+```python
+cfg = TesterConfig(
+	# ...
+	ssl_cert_file="./certificates/station.crt",
+	ssl_key_file="./certificates/station.key",
+)
+```
+
+Then open `https://<station-address>:5050`. The certificate must be trusted by the client and include the station hostname or IP address in its Subject Alternative Name. Configuring only one of the two files raises an error at startup.
+
+For production stations, terminating TLS at a managed reverse proxy such as nginx or IIS is recommended. The proxy serves HTTPS to browsers and forwards HTTP/WebSocket traffic to `http://127.0.0.1:5050`; in that setup, leave the two application TLS settings unset.
 
 ---
 

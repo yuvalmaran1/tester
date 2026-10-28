@@ -12,7 +12,7 @@ import io
 from xml.sax.saxutils import escape
 
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
@@ -88,81 +88,171 @@ class TestReport:
         return html_content
 
     def generate_pdf(self) -> bytes:
-        """Generate a self-contained PDF report without browser dependencies."""
+        """Generate a light, print-oriented counterpart to the HTML report."""
         output = io.BytesIO()
         document = SimpleDocTemplate(
             output,
             pagesize=landscape(A4),
-            rightMargin=10 * mm,
-            leftMargin=10 * mm,
-            topMargin=10 * mm,
-            bottomMargin=10 * mm,
+            rightMargin=12 * mm,
+            leftMargin=12 * mm,
+            topMargin=11 * mm,
+            bottomMargin=14 * mm,
             title=f"Test Report - {self.run.tester}",
+            author="Tester",
         )
         styles = getSampleStyleSheet()
         title_style = ParagraphStyle(
             "ReportTitle",
             parent=styles["Title"],
-            fontSize=18,
-            leading=22,
-            alignment=TA_CENTER,
-            textColor=colors.HexColor("#1e293b"),
+            fontName="Helvetica-Bold",
+            fontSize=20,
+            leading=24,
+            alignment=TA_LEFT,
+            textColor=colors.HexColor("#111827"),
+            spaceAfter=1 * mm,
         )
         body_style = ParagraphStyle(
             "ReportBody",
             parent=styles["BodyText"],
-            fontSize=8,
-            leading=10,
+            fontName="Helvetica",
+            fontSize=7.5,
+            leading=9.5,
+            textColor=colors.HexColor("#334155"),
+        )
+        label_style = ParagraphStyle(
+            "ReportLabel",
+            parent=body_style,
+            fontName="Helvetica-Bold",
+            fontSize=6.5,
+            leading=8,
+            textColor=colors.HexColor("#64748b"),
+            uppercase=True,
         )
         heading_style = ParagraphStyle(
             "ReportHeading",
             parent=styles["Heading2"],
-            fontSize=11,
-            leading=14,
-            textColor=colors.HexColor("#4338ca"),
-            spaceBefore=8,
-            spaceAfter=5,
+            fontName="Helvetica-Bold",
+            fontSize=9,
+            leading=11,
+            textColor=colors.HexColor("#4f46e5"),
+            spaceBefore=4 * mm,
+            spaceAfter=2 * mm,
+        )
+        subtitle_style = ParagraphStyle(
+            "ReportSubtitle",
+            parent=body_style,
+            fontSize=8,
+            textColor=colors.HexColor("#64748b"),
+        )
+        header_meta_style = ParagraphStyle(
+            "HeaderMeta",
+            parent=body_style,
+            alignment=TA_RIGHT,
+            fontSize=7,
+            leading=10,
+            textColor=colors.HexColor("#64748b"),
         )
 
-        def paragraph(value):
-            return Paragraph(escape(str(value if value is not None else "")), body_style)
+        def paragraph(value, style=body_style):
+            return Paragraph(escape(str(value if value is not None else "")), style)
+
+        def info_panel(title, rows):
+            panel_rows = [[paragraph(title.upper(), heading_style)]]
+            for label, value in rows:
+                panel_rows.append([Table(
+                    [[paragraph(label.upper(), label_style), paragraph(value)]],
+                    colWidths=[34 * mm, 83 * mm],
+                    style=TableStyle([
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                        ("TOPPADDING", (0, 0), (-1, -1), 1.5 * mm),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 1.5 * mm),
+                        ("LINEBELOW", (0, 0), (-1, -1), 0.25, colors.HexColor("#e2e8f0")),
+                    ]),
+                )])
+            return Table(panel_rows, colWidths=[121 * mm], style=TableStyle([
+                ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+                ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#dbe3ef")),
+                ("LEFTPADDING", (0, 0), (-1, -1), 4 * mm),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 4 * mm),
+                ("TOPPADDING", (0, 0), (-1, -1), 1 * mm),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 1 * mm),
+            ]))
 
         duration = self._format_duration(self.run.start_date, self.run.end_date)
-        metadata = [
-            ["Overall result", self.run.result.name, "Run ID", self.run.run_id or ""],
-            ["DUT", self.run.dut, "Product ID", self.run.dut_product_id],
-            ["Program", self.run.program, "Serial number", getattr(self.run, "serial_number", "")],
-            ["Operator", getattr(self.run, "operator", ""), "Duration", duration],
-            ["Started", self.run.start_date, "Config hash", getattr(self.run, "config_hash", "")],
-        ]
-        metadata_table = Table(
-            [[paragraph(cell) for cell in row] for row in metadata],
-            colWidths=[30 * mm, 90 * mm, 30 * mm, 105 * mm],
-        )
-        metadata_table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#eef2ff")),
-            ("BACKGROUND", (2, 0), (2, -1), colors.HexColor("#eef2ff")),
-            ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-            ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold"),
-            ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cbd5e1")),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 5),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-            ("TOPPADDING", (0, 0), (-1, -1), 4),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        generated = self.run.end_date.strftime("%d %b %Y, %H:%M") if self.run.end_date else ""
+        header = Table([[
+            [paragraph(self.run.tester, title_style), paragraph("Test Execution Report", subtitle_style)],
+            paragraph(f"RUN ID  {self.run.run_id or '-'}<br/>GENERATED  {generated}", header_meta_style),
+        ]], colWidths=[178 * mm, 67 * mm], style=TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4 * mm),
+            ("LINEBELOW", (0, 0), (-1, -1), 1.5, colors.HexColor("#4f46e5")),
         ]))
 
-        story = [
-            Paragraph(f"{escape(self.run.tester)} - Test Execution Report", title_style),
-            Spacer(1, 5 * mm),
-            metadata_table,
+        stats_count = Counter(result.result.name for result in self.run.test_results)
+        stat_items = [
+            (self.run.result.name, "OVERALL RESULT", self._pdf_result_color(self.run.result.name)),
+            (len(self.run.test_results), "TESTS EXECUTED", "#4f46e5"),
+            (stats_count.get("PASS", 0), "PASSED", "#059669"),
+            (stats_count.get("FAIL", 0), "FAILED", "#dc2626"),
+            (stats_count.get("ERROR", 0), "ERRORS", "#d97706"),
+            (duration, "DURATION", "#0891b2"),
         ]
+        stat_cells = []
+        for value, label, color in stat_items:
+            value_style = ParagraphStyle(
+                f"StatValue{label}", parent=title_style, alignment=TA_CENTER,
+                fontSize=12, leading=15, textColor=colors.HexColor(color),
+            )
+            stat_cells.append(Table(
+                [[paragraph(value, value_style)], [paragraph(label, ParagraphStyle(
+                    f"StatLabel{label}", parent=label_style, alignment=TA_CENTER,
+                ))]],
+                colWidths=[39.5 * mm],
+                style=TableStyle([
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
+                    ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#dbe3ef")),
+                    ("TOPPADDING", (0, 0), (-1, 0), 3 * mm),
+                    ("BOTTOMPADDING", (0, 1), (-1, 1), 2.5 * mm),
+                ]),
+            ))
+        stats = Table([stat_cells], colWidths=[41 * mm] * 6, style=TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0.75 * mm),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0.75 * mm),
+        ]))
+
+        serial_number = getattr(self.run, "serial_number", "") or "-"
+        operator = getattr(self.run, "operator", "") or "-"
+        config_hash = getattr(self.run, "config_hash", "") or "-"
+        started = self.run.start_date.strftime("%H:%M:%S  %d/%m/%Y") if self.run.start_date else "-"
+        dut_panel = info_panel("Device Under Test", [
+            ("Name", self.run.dut),
+            ("Description", self.run.dut_desc),
+            ("Product ID", self.run.dut_product_id),
+            ("Serial Number", serial_number),
+        ])
+        program_panel = info_panel("Test Program", [
+            ("Program", self.run.program),
+            ("Description", self.run.program_desc),
+            ("Start Time", started),
+            ("Operator", operator),
+            ("Config Hash", config_hash),
+        ])
+        details = Table([[dut_panel, "", program_panel]], colWidths=[121 * mm, 4 * mm, 121 * mm],
+                        style=TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+
+        story = [header, Spacer(1, 4 * mm), stats, Spacer(1, 4 * mm), details]
 
         if self.run.program_attr:
             story.append(Paragraph("Program Attributes", heading_style))
             attr_rows = [[paragraph("Attribute"), paragraph("Value")]]
             attr_rows.extend([paragraph(key), paragraph(value)] for key, value in self.run.program_attr.items())
-            attr_table = Table(attr_rows, colWidths=[60 * mm, 195 * mm], repeatRows=1)
+            attr_table = Table(attr_rows, colWidths=[60 * mm, 186 * mm], repeatRows=1)
             attr_table.setStyle(self._pdf_table_style())
             story.append(attr_table)
 
@@ -188,28 +278,57 @@ class TestReport:
             )])
         result_table = Table(
             result_rows,
-            colWidths=[16 * mm, 28 * mm, 43 * mm, 20 * mm, 32 * mm, 20 * mm, 16 * mm, 22 * mm, 58 * mm],
+            colWidths=[16 * mm, 27 * mm, 42 * mm, 18 * mm, 29 * mm, 18 * mm, 15 * mm, 21 * mm, 60 * mm],
             repeatRows=1,
         )
-        result_table.setStyle(self._pdf_table_style())
+        result_style = self._pdf_table_style()
+        for row_index, result in enumerate(self.run.test_results, start=1):
+            result_name = result.result.name
+            result_style.add("TEXTCOLOR", (7, row_index), (7, row_index),
+                             colors.HexColor(self._pdf_result_color(result_name)))
+            result_style.add("FONTNAME", (7, row_index), (7, row_index), "Helvetica-Bold")
+        result_table.setStyle(result_style)
         story.append(result_table)
 
-        document.build(story)
+        def add_page_footer(canvas, doc):
+            canvas.saveState()
+            canvas.setStrokeColor(colors.HexColor("#dbe3ef"))
+            canvas.setLineWidth(0.5)
+            canvas.line(doc.leftMargin, 9 * mm, landscape(A4)[0] - doc.rightMargin, 9 * mm)
+            canvas.setFillColor(colors.HexColor("#64748b"))
+            canvas.setFont("Helvetica", 7)
+            canvas.drawString(doc.leftMargin, 5.5 * mm, f"{self.run.tester}  |  {self.run.dut}  |  {serial_number}")
+            canvas.drawRightString(landscape(A4)[0] - doc.rightMargin, 5.5 * mm, f"Page {doc.page}")
+            canvas.restoreState()
+
+        document.build(story, onFirstPage=add_page_footer, onLaterPages=add_page_footer)
         return output.getvalue()
+
+    @staticmethod
+    def _pdf_result_color(result_name):
+        return {
+            "PASS": "#059669",
+            "FAIL": "#dc2626",
+            "ERROR": "#d97706",
+            "INFOONLY": "#2563eb",
+            "SKIPPED": "#64748b",
+            "ABORTED": "#7c3aed",
+        }.get(result_name, "#64748b")
 
     @staticmethod
     def _pdf_table_style():
         return TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4338ca")),
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4f46e5")),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
             ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cbd5e1")),
+            ("LINEBELOW", (0, 1), (-1, -1), 0.25, colors.HexColor("#dbe3ef")),
+            ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#dbe3ef")),
             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 3),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 3),
-            ("TOPPADDING", (0, 0), (-1, -1), 3),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+            ("LEFTPADDING", (0, 0), (-1, -1), 2.5),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 2.5),
+            ("TOPPADDING", (0, 0), (-1, -1), 3.5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 3.5),
         ])
 
     # ------------------------------------------------------------------ helpers

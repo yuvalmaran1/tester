@@ -56,7 +56,7 @@ export default function Home() {
     const [serialNumber, setSerialNumber] = React.useState('');
 
     React.useEffect(() => calcProgress(tester), [tester]);
-    React.useEffect(() => getState(), []);
+    React.useEffect(() => { socket.emit('get_state'); }, []);
 
     React.useEffect(() => {
         const handleTester = (data) => { setTester(data); setOperator(data?.operator ?? null); setSerialNumber(data?.serial_number ?? ''); };
@@ -141,7 +141,6 @@ export default function Home() {
         setCanReport(done === total && total !== 0);
     };
 
-    const getState = () => socket.emit('get_state');
     const reload   = () => socket.emit('reload');
     const setAttributes = (attr) => socket.emit('attr', attr);
     const handleDialogClose = (response, responseData) =>

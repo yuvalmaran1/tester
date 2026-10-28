@@ -71,7 +71,10 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
                 self.current_operator = {k: v for k, v in self.current_operator.items() if k != 'password_hash'}
 
         # interface
-        self.interface = TesterIf()
+        self.interface = TesterIf(
+            ssl_cert_file=config.ssl_cert_file,
+            ssl_key_file=config.ssl_key_file,
+        )
         self.interface.connect_handler = self._client_connected_handler
         self.interface.disconnect_handler = self._client_disconnected_handler
         self.interface.set_dut_handler = self._set_dut_handler

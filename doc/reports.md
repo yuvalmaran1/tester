@@ -110,7 +110,9 @@ Both are embedded as base64 data-URIs so they download without a server.
 
 ## Report Appearance
 
-Reports use a dark colour scheme that mirrors the web UI:
+The interactive HTML report uses the web UI's dark colour scheme. The PDF uses the same information hierarchy in a light, print-oriented layout: report header, six summary cards, side-by-side DUT and program panels, program attributes, colour-coded results, and page footers with run identity and page number.
+
+Result colours are preserved in both formats:
 
 | Result | Colour |
 |---|---|
@@ -121,4 +123,4 @@ Reports use a dark colour scheme that mirrors the web UI:
 | SKIPPED | Slate `#64748b` |
 | ABORTED | Purple `#a78bfa` |
 
-The report is fully responsive and renders on mobile screens.
+The HTML report is fully responsive and renders on mobile screens. The PDF uses landscape A4 pages for a readable complete result table.

@@ -61,7 +61,9 @@ class TesterRequest(Enum):
     SerialNumber = "serial_number"
 
 class TesterIf:
-    def __init__(self) -> None:
+    def __init__(self, ssl_cert_file=None, ssl_key_file=None) -> None:
+        self.ssl_cert_file = ssl_cert_file
+        self.ssl_key_file = ssl_key_file
         self.app = Flask('tester',template_folder=FRONTEND_TEMPLATE_PATH, static_folder=FRONTEND_STATIC_PATH)
         self.app.config['EXPLAIN_TEMPLATE_LOADING'] = True
 
@@ -119,7 +121,18 @@ class TesterIf:
         TestLogger().addHandler(log_handler)
 
     def run(self):
-        self.sio.run(self.app, host='0.0.0.0', port=5050, use_reloader=False, allow_unsafe_werkzeug=True)
+        if bool(self.ssl_cert_file) != bool(self.ssl_key_file):
+            raise ValueError("ssl_cert_file and ssl_key_file must be configured together")
+
+        run_options = {
+            'host': '0.0.0.0',
+            'port': 5050,
+            'use_reloader': False,
+            'allow_unsafe_werkzeug': True,
+        }
+        if self.ssl_cert_file:
+            run_options['ssl_context'] = (self.ssl_cert_file, self.ssl_key_file)
+        self.sio.run(self.app, **run_options)
 
     def _add_endpoints(self):
         self._add_endpoint(endpoint='/', endpoint_name='/', handler=self.index_handler)
