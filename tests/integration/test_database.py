@@ -50,6 +50,7 @@ def test_create_run_returns_id(db):
 def test_get_run_fields(db):
     run_id = db.create_run(_run('MyDUT', 'MyProg'))
     retrieved = db.get_run(run_id)
+    assert retrieved.run_id == run_id
     assert retrieved.dut == 'MyDUT'
     assert retrieved.program == 'MyProg'
 

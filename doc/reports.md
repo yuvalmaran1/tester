@@ -96,7 +96,7 @@ A table with one row per test case:
 | **Result** | Colour-coded badge |
 | **Comment** | Free-text comment from the test case |
 
-For **Numeric2d** test cases, an interactive Plotly chart is rendered inline in the row immediately below the test result. The chart shows the measured curve (green) against min tolerance (blue dashed) and max tolerance (red dashed), with a shaded band between the limits.
+For **Numeric2d** test cases, a chart is rendered inline in the row immediately below the test result. HTML reports use an interactive Plotly chart; PDF reports use a printable vector chart in the same table position. Both show the measured curve (green) against min tolerance (blue dashed) and max tolerance (red dashed), with a shaded band between the limits.
 
 ### Attachments section
 
@@ -110,7 +110,7 @@ Both are embedded as base64 data-URIs so they download without a server.
 
 ## Report Appearance
 
-The interactive HTML report uses the web UI's dark colour scheme. The PDF uses the same information hierarchy in a light, print-oriented layout: report header, six summary cards, side-by-side DUT and program panels, program attributes, colour-coded results, and page footers with run identity and page number.
+The interactive HTML report uses the web UI's dark colour scheme. The PDF uses the same information hierarchy in a light, print-oriented layout: report header, six summary cards, side-by-side DUT and program panels, program attributes, colour-coded results, and page footers with run identity and page number. Both formats embed the same Vera Sans font family and use a matching type scale.
 
 Result colours are preserved in both formats:
 

@@ -9,14 +9,21 @@ from datetime import timedelta
 import tempfile
 import base64
 import io
+import math
+import unicodedata
 from xml.sax.saxutils import escape
 
+import reportlab
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.utils import ImageReader
+from reportlab.graphics.shapes import Drawing, Circle, Line, Polygon, PolyLine, Rect, String
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 
 
 class TestReport:
@@ -75,6 +82,8 @@ class TestReport:
         'UNKNOWN':  {'color': '#64748b', 'bg': 'rgba(100,116,139,0.15)', 'border': 'rgba(100,116,139,0.3)'},
     }
     DEFAULT_PALETTE = {'color': '#818cf8', 'bg': 'rgba(129,140,248,0.15)', 'border': 'rgba(129,140,248,0.3)'}
+    PDF_FONT = "VeraSans"
+    PDF_FONT_BOLD = "VeraSans-Bold"
 
     def __init__(self, run: TestRun, path: str = None) -> None:
         self.run = run
@@ -89,6 +98,7 @@ class TestReport:
 
     def generate_pdf(self) -> bytes:
         """Generate a light, print-oriented counterpart to the HTML report."""
+        self._register_pdf_fonts()
         output = io.BytesIO()
         document = SimpleDocTemplate(
             output,
@@ -104,9 +114,9 @@ class TestReport:
         title_style = ParagraphStyle(
             "ReportTitle",
             parent=styles["Title"],
-            fontName="Helvetica-Bold",
-            fontSize=20,
-            leading=24,
+            fontName=self.PDF_FONT_BOLD,
+            fontSize=16.5,
+            leading=20,
             alignment=TA_LEFT,
             textColor=colors.HexColor("#111827"),
             spaceAfter=1 * mm,
@@ -114,26 +124,35 @@ class TestReport:
         body_style = ParagraphStyle(
             "ReportBody",
             parent=styles["BodyText"],
-            fontName="Helvetica",
-            fontSize=7.5,
-            leading=9.5,
+            fontName=self.PDF_FONT,
+            fontSize=9,
+            leading=11,
             textColor=colors.HexColor("#334155"),
         )
         label_style = ParagraphStyle(
             "ReportLabel",
             parent=body_style,
-            fontName="Helvetica-Bold",
-            fontSize=6.5,
-            leading=8,
+            fontName=self.PDF_FONT_BOLD,
+            fontSize=8.25,
+            leading=10,
             textColor=colors.HexColor("#64748b"),
             uppercase=True,
+        )
+        table_header_style = ParagraphStyle(
+            "TableHeader",
+            parent=body_style,
+            fontName=self.PDF_FONT_BOLD,
+            fontSize=8.25,
+            leading=10,
+            textColor=colors.white,
+            alignment=TA_CENTER,
         )
         heading_style = ParagraphStyle(
             "ReportHeading",
             parent=styles["Heading2"],
-            fontName="Helvetica-Bold",
-            fontSize=9,
-            leading=11,
+            fontName=self.PDF_FONT_BOLD,
+            fontSize=8.6,
+            leading=10.5,
             textColor=colors.HexColor("#4f46e5"),
             spaceBefore=4 * mm,
             spaceAfter=2 * mm,
@@ -141,36 +160,73 @@ class TestReport:
         subtitle_style = ParagraphStyle(
             "ReportSubtitle",
             parent=body_style,
-            fontSize=8,
+            fontSize=9.75,
             textColor=colors.HexColor("#64748b"),
         )
         header_meta_style = ParagraphStyle(
             "HeaderMeta",
             parent=body_style,
             alignment=TA_RIGHT,
-            fontSize=7,
-            leading=10,
+            fontSize=9,
+            leading=12,
             textColor=colors.HexColor("#64748b"),
         )
 
         def paragraph(value, style=body_style):
-            return Paragraph(escape(str(value if value is not None else "")), style)
+            return Paragraph(escape(self._pdf_safe_text(value)), style)
 
-        def info_panel(title, rows):
-            panel_rows = [[paragraph(title.upper(), heading_style)]]
+        def result_badge(result_name):
+            badge_style = ParagraphStyle(
+                f"ResultBadge{result_name}",
+                parent=label_style,
+                fontName=self.PDF_FONT_BOLD,
+                fontSize=8.25,
+                leading=10,
+                alignment=TA_CENTER,
+                textColor=colors.HexColor(self._pdf_result_color(result_name)),
+            )
+            return Table(
+                [[paragraph(result_name, badge_style)]],
+                colWidths=[16 * mm],
+                style=TableStyle([
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(self._pdf_result_background(result_name))),
+                    ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor(self._pdf_result_color(result_name))),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+                    ("TOPPADDING", (0, 0), (-1, -1), 1),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                ]),
+            )
+
+        def info_panel(title, rows, side_content=None):
+            info_rows = []
             for label, value in rows:
-                panel_rows.append([Table(
-                    [[paragraph(label.upper(), label_style), paragraph(value)]],
-                    colWidths=[34 * mm, 83 * mm],
-                    style=TableStyle([
-                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                        ("TOPPADDING", (0, 0), (-1, -1), 1.5 * mm),
-                        ("BOTTOMPADDING", (0, 0), (-1, -1), 1.5 * mm),
-                        ("LINEBELOW", (0, 0), (-1, -1), 0.25, colors.HexColor("#e2e8f0")),
-                    ]),
-                )])
+                info_rows.append([paragraph(label.upper(), label_style), paragraph(value)])
+
+            if side_content:
+                info_widths = [25 * mm, 50 * mm]
+            else:
+                info_widths = [34 * mm, 83 * mm]
+            info_table = Table(info_rows, colWidths=info_widths, style=TableStyle([
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0.8 * mm),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0.8 * mm),
+                ("LINEBELOW", (0, 0), (-1, -1), 0.25, colors.HexColor("#e2e8f0")),
+            ]))
+            if side_content:
+                body = Table([[info_table, side_content]], colWidths=[77 * mm, 40 * mm], style=TableStyle([
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("ALIGN", (1, 0), (1, 0), "CENTER"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]))
+            else:
+                body = info_table
+            panel_rows = [[paragraph(title.upper(), heading_style)], [body]]
             return Table(panel_rows, colWidths=[121 * mm], style=TableStyle([
                 ("BACKGROUND", (0, 0), (-1, -1), colors.white),
                 ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#dbe3ef")),
@@ -182,9 +238,10 @@ class TestReport:
 
         duration = self._format_duration(self.run.start_date, self.run.end_date)
         generated = self.run.end_date.strftime("%d %b %Y, %H:%M") if self.run.end_date else ""
+        run_id = escape(str(self.run.run_id or "-"))
         header = Table([[
             [paragraph(self.run.tester, title_style), paragraph("Test Execution Report", subtitle_style)],
-            paragraph(f"RUN ID  {self.run.run_id or '-'}<br/>GENERATED  {generated}", header_meta_style),
+            Paragraph(f"<b>RUN ID</b>  {run_id}<br/><b>GENERATED</b>  {escape(generated)}", header_meta_style),
         ]], colWidths=[178 * mm, 67 * mm], style=TableStyle([
             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
             ("LEFTPADDING", (0, 0), (-1, -1), 0),
@@ -206,7 +263,7 @@ class TestReport:
         for value, label, color in stat_items:
             value_style = ParagraphStyle(
                 f"StatValue{label}", parent=title_style, alignment=TA_CENTER,
-                fontSize=12, leading=15, textColor=colors.HexColor(color),
+                fontSize=19.5, leading=22, textColor=colors.HexColor(color),
             )
             stat_cells.append(Table(
                 [[paragraph(value, value_style)], [paragraph(label, ParagraphStyle(
@@ -230,12 +287,14 @@ class TestReport:
         operator = getattr(self.run, "operator", "") or "-"
         config_hash = getattr(self.run, "config_hash", "") or "-"
         started = self.run.start_date.strftime("%H:%M:%S  %d/%m/%Y") if self.run.start_date else "-"
+        dut_image_path = self.run.dut_image if os.path.isfile(self.run.dut_image) else self.DUT_IMAGE_PATH
+        dut_image = self._pdf_image(dut_image_path, max_width=36 * mm, max_height=34 * mm)
         dut_panel = info_panel("Device Under Test", [
             ("Name", self.run.dut),
             ("Description", self.run.dut_desc),
             ("Product ID", self.run.dut_product_id),
             ("Serial Number", serial_number),
-        ])
+        ], side_content=dut_image)
         program_panel = info_panel("Test Program", [
             ("Program", self.run.program),
             ("Description", self.run.program_desc),
@@ -250,43 +309,56 @@ class TestReport:
 
         if self.run.program_attr:
             story.append(Paragraph("Program Attributes", heading_style))
-            attr_rows = [[paragraph("Attribute"), paragraph("Value")]]
+            attr_rows = [[paragraph("Attribute", table_header_style), paragraph("Value", table_header_style)]]
             attr_rows.extend([paragraph(key), paragraph(value)] for key, value in self.run.program_attr.items())
             attr_table = Table(attr_rows, colWidths=[60 * mm, 186 * mm], repeatRows=1)
             attr_table.setStyle(self._pdf_table_style())
             story.append(attr_table)
 
         story.append(Paragraph("Detailed Test Results", heading_style))
-        result_rows = [[paragraph(value) for value in (
+        result_rows = [[paragraph(value, table_header_style) for value in (
             "Time", "Suite", "Name", "Min", "Value", "Max", "Unit", "Result", "Comment"
         )]]
+        result_row_indices = []
+        plot_row_indices = []
         for result in self.run.test_results:
             result_dict = result.to_dict()
             elapsed = ""
             if self.run.start_date and result.date:
                 elapsed = str(timedelta(seconds=max(0, int((result.date - self.run.start_date).total_seconds()))))
-            result_rows.append([paragraph(value) for value in (
-                elapsed,
-                result_dict["Suite"],
-                result_dict["Name"],
-                result_dict["Min"],
-                result_dict["Value"],
-                result_dict["Max"],
-                result_dict["Unit"],
-                result_dict["Result"],
-                result_dict["Comment"],
-            )])
+            result_row_indices.append(len(result_rows))
+            result_rows.append([
+                paragraph(elapsed),
+                paragraph(result_dict["Suite"]),
+                paragraph(result_dict["Name"]),
+                paragraph(self._pdf_display_value(result_dict["Min"])),
+                paragraph(self._pdf_display_value(result_dict["Value"])),
+                paragraph(self._pdf_display_value(result_dict["Max"])),
+                paragraph(result_dict["Unit"]),
+                result_badge(result_dict["Result"]),
+                paragraph(result_dict["Comment"]),
+            ])
+            if result.result_type == "numeric2d" and getattr(result, "plot_data", None):
+                plot_row_indices.append(len(result_rows))
+                result_rows.append([
+                    self._pdf_plot_drawing(result.plot_data, result.result.name),
+                    "", "", "", "", "", "", "", "",
+                ])
         result_table = Table(
             result_rows,
             colWidths=[16 * mm, 27 * mm, 42 * mm, 18 * mm, 29 * mm, 18 * mm, 15 * mm, 21 * mm, 60 * mm],
             repeatRows=1,
         )
         result_style = self._pdf_table_style()
-        for row_index, result in enumerate(self.run.test_results, start=1):
-            result_name = result.result.name
-            result_style.add("TEXTCOLOR", (7, row_index), (7, row_index),
-                             colors.HexColor(self._pdf_result_color(result_name)))
-            result_style.add("FONTNAME", (7, row_index), (7, row_index), "Helvetica-Bold")
+        for row_index in result_row_indices:
+            result_style.add("VALIGN", (0, row_index), (-1, row_index), "MIDDLE")
+        for row_index in plot_row_indices:
+            result_style.add("SPAN", (0, row_index), (-1, row_index))
+            result_style.add("BACKGROUND", (0, row_index), (-1, row_index), colors.HexColor("#f8fafc"))
+            result_style.add("LEFTPADDING", (0, row_index), (-1, row_index), 0)
+            result_style.add("RIGHTPADDING", (0, row_index), (-1, row_index), 0)
+            result_style.add("TOPPADDING", (0, row_index), (-1, row_index), 3 * mm)
+            result_style.add("BOTTOMPADDING", (0, row_index), (-1, row_index), 3 * mm)
         result_table.setStyle(result_style)
         story.append(result_table)
 
@@ -296,7 +368,7 @@ class TestReport:
             canvas.setLineWidth(0.5)
             canvas.line(doc.leftMargin, 9 * mm, landscape(A4)[0] - doc.rightMargin, 9 * mm)
             canvas.setFillColor(colors.HexColor("#64748b"))
-            canvas.setFont("Helvetica", 7)
+            canvas.setFont(self.PDF_FONT, 8.25)
             canvas.drawString(doc.leftMargin, 5.5 * mm, f"{self.run.tester}  |  {self.run.dut}  |  {serial_number}")
             canvas.drawRightString(landscape(A4)[0] - doc.rightMargin, 5.5 * mm, f"Page {doc.page}")
             canvas.restoreState()
@@ -316,19 +388,172 @@ class TestReport:
         }.get(result_name, "#64748b")
 
     @staticmethod
+    def _pdf_result_background(result_name):
+        return {
+            "PASS": "#ecfdf5",
+            "FAIL": "#fef2f2",
+            "ERROR": "#fffbeb",
+            "INFOONLY": "#eff6ff",
+            "SKIPPED": "#f1f5f9",
+            "ABORTED": "#f5f3ff",
+        }.get(result_name, "#f1f5f9")
+
+    @staticmethod
+    def _pdf_display_value(value):
+        if value is None or value == "":
+            return ""
+        text = str(value)
+        try:
+            number = float(text)
+        except (TypeError, ValueError):
+            return text
+        return f"{number:.6g}"
+
+    @classmethod
+    def _pdf_plot_drawing(cls, plot_data, result_name, width=246 * mm, height=68 * mm):
+        cls._register_pdf_fonts()
+        points = plot_data.get("points", [])
+        samples = []
+        for point in points:
+            try:
+                sample = tuple(float(point[key]) for key in ("x", "min", "value", "max"))
+            except (KeyError, TypeError, ValueError):
+                continue
+            if all(math.isfinite(value) for value in sample):
+                samples.append(sample)
+
+        drawing = Drawing(width, height)
+        drawing.add(Rect(0, 0, width, height, rx=3, ry=3,
+                         fillColor=colors.white, strokeColor=colors.HexColor("#dbe3ef"), strokeWidth=0.6))
+        if not samples:
+            drawing.add(String(width / 2, height / 2, "No plot data available",
+                               textAnchor="middle", fontName=cls.PDF_FONT, fontSize=9,
+                               fillColor=colors.HexColor("#64748b")))
+            return drawing
+
+        left, right, bottom, top = 15 * mm, 5 * mm, 11 * mm, 8 * mm
+        plot_width = width - left - right
+        plot_height = height - bottom - top
+        x_values = [sample[0] for sample in samples]
+        y_values = [value for sample in samples for value in sample[1:]]
+        x_min, x_max = min(x_values), max(x_values)
+        y_min, y_max = min(y_values), max(y_values)
+        if x_min == x_max:
+            x_min, x_max = x_min - 0.5, x_max + 0.5
+        if y_min == y_max:
+            y_min, y_max = y_min - 0.5, y_max + 0.5
+        y_padding = (y_max - y_min) * 0.08
+        y_min, y_max = y_min - y_padding, y_max + y_padding
+
+        def x_coord(value):
+            return left + ((value - x_min) / (x_max - x_min)) * plot_width
+
+        def y_coord(value):
+            return bottom + ((value - y_min) / (y_max - y_min)) * plot_height
+
+        drawing.add(Rect(left, bottom, plot_width, plot_height,
+                         fillColor=colors.HexColor("#f8fafc"), strokeColor=None))
+        for index in range(6):
+            fraction = index / 5
+            x = left + fraction * plot_width
+            y = bottom + fraction * plot_height
+            drawing.add(Line(x, bottom, x, bottom + plot_height,
+                             strokeColor=colors.HexColor("#e2e8f0"), strokeWidth=0.35))
+            drawing.add(Line(left, y, left + plot_width, y,
+                             strokeColor=colors.HexColor("#e2e8f0"), strokeWidth=0.35))
+            drawing.add(String(x, bottom - 3.5 * mm, cls._pdf_display_value(x_min + fraction * (x_max - x_min)),
+                               textAnchor="middle", fontName=cls.PDF_FONT, fontSize=7,
+                               fillColor=colors.HexColor("#64748b")))
+            drawing.add(String(left - 2 * mm, y - 1.5, cls._pdf_display_value(y_min + fraction * (y_max - y_min)),
+                               textAnchor="end", fontName=cls.PDF_FONT, fontSize=7,
+                               fillColor=colors.HexColor("#64748b")))
+
+        minimum = [(x_coord(sample[0]), y_coord(sample[1])) for sample in samples]
+        measured = [(x_coord(sample[0]), y_coord(sample[2])) for sample in samples]
+        maximum = [(x_coord(sample[0]), y_coord(sample[3])) for sample in samples]
+        band_points = [coordinate for point in maximum + list(reversed(minimum)) for coordinate in point]
+        drawing.add(Polygon(band_points, fillColor=colors.HexColor("#e0e7ff"), strokeColor=None))
+        drawing.add(PolyLine([coordinate for point in minimum for coordinate in point],
+                             strokeColor=colors.HexColor("#6366f1"), strokeWidth=0.8,
+                             strokeDashArray=[3, 2]))
+        drawing.add(PolyLine([coordinate for point in maximum for coordinate in point],
+                             strokeColor=colors.HexColor("#dc2626"), strokeWidth=0.8,
+                             strokeDashArray=[3, 2]))
+        measured_color = colors.HexColor(cls._pdf_result_color(result_name))
+        drawing.add(PolyLine([coordinate for point in measured for coordinate in point],
+                             strokeColor=measured_color, strokeWidth=1.5))
+        if len(measured) <= 60:
+            for x, y in measured:
+                drawing.add(Circle(x, y, 1.2, fillColor=measured_color, strokeColor=colors.white, strokeWidth=0.35))
+
+        drawing.add(Line(left, bottom, left + plot_width, bottom,
+                         strokeColor=colors.HexColor("#94a3b8"), strokeWidth=0.6))
+        drawing.add(Line(left, bottom, left, bottom + plot_height,
+                         strokeColor=colors.HexColor("#94a3b8"), strokeWidth=0.6))
+        xlabel = cls._pdf_safe_text(plot_data.get("xlabel", "X"))
+        ylabel = cls._pdf_safe_text(plot_data.get("ylabel", "Y"))
+        drawing.add(String(left + plot_width / 2, 1.5 * mm, xlabel,
+                           textAnchor="middle", fontName=cls.PDF_FONT_BOLD, fontSize=8,
+                           fillColor=colors.HexColor("#475569")))
+        drawing.add(String(2.5 * mm, bottom + plot_height / 2, ylabel,
+                           textAnchor="middle", fontName=cls.PDF_FONT_BOLD, fontSize=8,
+                           fillColor=colors.HexColor("#475569"), angle=90))
+
+        legend_y = height - 4.5 * mm
+        legend_x = width - 57 * mm
+        for label, color, dash in (
+            ("Min", "#6366f1", [3, 2]),
+            ("Max", "#dc2626", [3, 2]),
+            ("Measured", cls._pdf_result_color(result_name), None),
+        ):
+            drawing.add(Line(legend_x, legend_y, legend_x + 7 * mm, legend_y,
+                             strokeColor=colors.HexColor(color), strokeWidth=1.2,
+                             strokeDashArray=dash))
+            drawing.add(String(legend_x + 8 * mm, legend_y - 2, label,
+                               fontName=cls.PDF_FONT, fontSize=7,
+                               fillColor=colors.HexColor("#475569")))
+            legend_x += 19 * mm
+
+        return drawing
+
+    @classmethod
+    def _register_pdf_fonts(cls):
+        if cls.PDF_FONT in pdfmetrics.getRegisteredFontNames():
+            return
+        font_dir = pathlib.Path(reportlab.__file__).parent / "fonts"
+        pdfmetrics.registerFont(TTFont(cls.PDF_FONT, font_dir / "Vera.ttf"))
+        pdfmetrics.registerFont(TTFont(cls.PDF_FONT_BOLD, font_dir / "VeraBd.ttf"))
+
+    @staticmethod
+    def _pdf_image(image_path, max_width, max_height):
+        try:
+            width, height = ImageReader(str(image_path)).getSize()
+            scale = min(max_width / width, max_height / height, 1)
+            return Image(str(image_path), width=width * scale, height=height * scale)
+        except (OSError, TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _pdf_safe_text(value):
+        text = str(value if value is not None else "")
+        while text and unicodedata.category(text[0]).startswith("M"):
+            text = text[1:]
+        return text
+
+    @staticmethod
     def _pdf_table_style():
         return TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4f46e5")),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTNAME", (0, 0), (-1, 0), TestReport.PDF_FONT_BOLD),
             ("LINEBELOW", (0, 1), (-1, -1), 0.25, colors.HexColor("#dbe3ef")),
             ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#dbe3ef")),
             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
             ("LEFTPADDING", (0, 0), (-1, -1), 2.5),
             ("RIGHTPADDING", (0, 0), (-1, -1), 2.5),
-            ("TOPPADDING", (0, 0), (-1, -1), 3.5),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 3.5),
+            ("TOPPADDING", (0, 0), (-1, -1), 2),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
         ])
 
     # ------------------------------------------------------------------ helpers
@@ -341,7 +566,7 @@ class TestReport:
             template='plotly_dark',
             paper_bgcolor='#161b2e',
             plot_bgcolor='#0d1117',
-            font=dict(color='#94a3b8', size=11),
+            font=dict(family='Vera Sans', color='#94a3b8', size=11),
             height=height,
             margin=dict(l=64, r=32, t=36, b=64),
             showlegend=True,
@@ -349,7 +574,7 @@ class TestReport:
                 orientation='h', yanchor='bottom', y=1.02,
                 xanchor='right', x=1,
                 bgcolor='rgba(0,0,0,0)',
-                font=dict(color='#94a3b8'),
+                font=dict(family='Vera Sans', color='#94a3b8'),
             ),
         )
 
@@ -559,12 +784,21 @@ class TestReport:
 
     # ------------------------------------------------------------------ CSS
 
-    @staticmethod
-    def _get_css():
+    @classmethod
+    def _get_css(cls):
         # Plain string — no f-string escaping needed for CSS braces.
-        return """
+        font_dir = pathlib.Path(reportlab.__file__).parent / "fonts"
+        regular = base64.b64encode((font_dir / "Vera.ttf").read_bytes()).decode()
+        bold = base64.b64encode((font_dir / "VeraBd.ttf").read_bytes()).decode()
+        font_faces = (
+            f"@font-face{{font-family:'Vera Sans';src:url(data:font/ttf;base64,{regular}) "
+            "format('truetype');font-weight:400;font-style:normal}}\n"
+            f"@font-face{{font-family:'Vera Sans';src:url(data:font/ttf;base64,{bold}) "
+            "format('truetype');font-weight:700;font-style:normal}}\n"
+        )
+        return font_faces + """
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+body{font-family:'Vera Sans',sans-serif;
      background:#0d1117;color:#e2e8f0;line-height:1.6;font-size:15px}
 a{color:#818cf8;text-decoration:none}
 
