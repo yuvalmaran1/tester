@@ -8,6 +8,15 @@ import pathlib
 from datetime import timedelta
 import tempfile
 import base64
+import io
+from xml.sax.saxutils import escape
+
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 
 
 class TestReport:
@@ -77,6 +86,131 @@ class TestReport:
             with open(self.path, 'w', encoding='utf-8') as f:
                 f.write(html_content)
         return html_content
+
+    def generate_pdf(self) -> bytes:
+        """Generate a self-contained PDF report without browser dependencies."""
+        output = io.BytesIO()
+        document = SimpleDocTemplate(
+            output,
+            pagesize=landscape(A4),
+            rightMargin=10 * mm,
+            leftMargin=10 * mm,
+            topMargin=10 * mm,
+            bottomMargin=10 * mm,
+            title=f"Test Report - {self.run.tester}",
+        )
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            "ReportTitle",
+            parent=styles["Title"],
+            fontSize=18,
+            leading=22,
+            alignment=TA_CENTER,
+            textColor=colors.HexColor("#1e293b"),
+        )
+        body_style = ParagraphStyle(
+            "ReportBody",
+            parent=styles["BodyText"],
+            fontSize=8,
+            leading=10,
+        )
+        heading_style = ParagraphStyle(
+            "ReportHeading",
+            parent=styles["Heading2"],
+            fontSize=11,
+            leading=14,
+            textColor=colors.HexColor("#4338ca"),
+            spaceBefore=8,
+            spaceAfter=5,
+        )
+
+        def paragraph(value):
+            return Paragraph(escape(str(value if value is not None else "")), body_style)
+
+        duration = self._format_duration(self.run.start_date, self.run.end_date)
+        metadata = [
+            ["Overall result", self.run.result.name, "Run ID", self.run.run_id or ""],
+            ["DUT", self.run.dut, "Product ID", self.run.dut_product_id],
+            ["Program", self.run.program, "Serial number", getattr(self.run, "serial_number", "")],
+            ["Operator", getattr(self.run, "operator", ""), "Duration", duration],
+            ["Started", self.run.start_date, "Config hash", getattr(self.run, "config_hash", "")],
+        ]
+        metadata_table = Table(
+            [[paragraph(cell) for cell in row] for row in metadata],
+            colWidths=[30 * mm, 90 * mm, 30 * mm, 105 * mm],
+        )
+        metadata_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#eef2ff")),
+            ("BACKGROUND", (2, 0), (2, -1), colors.HexColor("#eef2ff")),
+            ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+            ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold"),
+            ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cbd5e1")),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 5),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ]))
+
+        story = [
+            Paragraph(f"{escape(self.run.tester)} - Test Execution Report", title_style),
+            Spacer(1, 5 * mm),
+            metadata_table,
+        ]
+
+        if self.run.program_attr:
+            story.append(Paragraph("Program Attributes", heading_style))
+            attr_rows = [[paragraph("Attribute"), paragraph("Value")]]
+            attr_rows.extend([paragraph(key), paragraph(value)] for key, value in self.run.program_attr.items())
+            attr_table = Table(attr_rows, colWidths=[60 * mm, 195 * mm], repeatRows=1)
+            attr_table.setStyle(self._pdf_table_style())
+            story.append(attr_table)
+
+        story.append(Paragraph("Detailed Test Results", heading_style))
+        result_rows = [[paragraph(value) for value in (
+            "Time", "Suite", "Name", "Min", "Value", "Max", "Unit", "Result", "Comment"
+        )]]
+        for result in self.run.test_results:
+            result_dict = result.to_dict()
+            elapsed = ""
+            if self.run.start_date and result.date:
+                elapsed = str(timedelta(seconds=max(0, int((result.date - self.run.start_date).total_seconds()))))
+            result_rows.append([paragraph(value) for value in (
+                elapsed,
+                result_dict["Suite"],
+                result_dict["Name"],
+                result_dict["Min"],
+                result_dict["Value"],
+                result_dict["Max"],
+                result_dict["Unit"],
+                result_dict["Result"],
+                result_dict["Comment"],
+            )])
+        result_table = Table(
+            result_rows,
+            colWidths=[16 * mm, 28 * mm, 43 * mm, 20 * mm, 32 * mm, 20 * mm, 16 * mm, 22 * mm, 58 * mm],
+            repeatRows=1,
+        )
+        result_table.setStyle(self._pdf_table_style())
+        story.append(result_table)
+
+        document.build(story)
+        return output.getvalue()
+
+    @staticmethod
+    def _pdf_table_style():
+        return TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4338ca")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cbd5e1")),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 3),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+            ("TOPPADDING", (0, 0), (-1, -1), 3),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ])
 
     # ------------------------------------------------------------------ helpers
 

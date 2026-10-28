@@ -1,6 +1,7 @@
 name: Tests
 
 on:
+    workflow_dispatch:
     push:
         branches: ["**"]
     pull_request:
@@ -58,3 +59,18 @@ jobs:
             - name: Run tests
               working-directory: tester-frontend
               run: npm run test:ci
+
+            - name: Build static frontend
+              working-directory: tester-frontend
+              run: npm run build
+
+            - name: Verify static export
+              run: test -f tester/frontend/index.html
+
+            - name: Upload static frontend
+              uses: actions/upload-artifact@v4
+              with:
+                  name: tester-frontend-${{ github.sha }}
+                  path: tester/frontend
+                  if-no-files-found: error
+                  retention-days: 14

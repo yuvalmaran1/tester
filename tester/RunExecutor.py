@@ -12,6 +12,7 @@ Contains all methods responsible for running a test program:
 import ctypes
 import threading
 from threading import Thread
+from datetime import datetime
 
 from .TestResult import TestResult
 from .TestSuite import TestSuite
@@ -47,6 +48,16 @@ class RunExecutorMixin:
         self.test_stats['done'] += 1
         self.test_stats[result.name] += 1
 
+    def _execute_test_case(self, test_case: TestCase):
+        """Execute user-provided test code without allowing it to escape the run."""
+        try:
+            test_case.execute(self.run_data)
+        except BaseException as exc:
+            test_case.result.date = datetime.now(tz=None)
+            test_case.result.comment = str(exc)
+            test_case.result.result = TestResult.TestEval.ERROR
+            self.logger.error(f"Test '{test_case.config.name}' escaped execution protection: {exc}")
+
     def _execute_testsuite(self, ts: TestSuite, run_id, skip_suite: bool = False):
         skip_testcases = False
         self._update_status(f"Executing Test Suite '{ts.name}'")
@@ -64,7 +75,7 @@ class RunExecutorMixin:
                         else:
                             ts.setup.result.comment = "Skipped by user"
             else:
-                ts.setup.execute(self.run_data)
+                self._execute_test_case(ts.setup)
                 skip_testcases = ts.setup.result.result != TestResult.TestEval.PASS
                 if ts.setup.result.result == TestResult.TestEval.ABORTED:
                     self.abort_run = True
@@ -91,7 +102,7 @@ class RunExecutorMixin:
                             tc.result.comment = "Skipped by user"
             else:
                 self._update_status(f"Executing Test Case '{tc.config.name}'")
-                tc.execute(self.run_data)
+                self._execute_test_case(tc)
                 if tc.result.result == TestResult.TestEval.ABORTED:
                     self.abort_run = True
             self.db.append_result(tc.result, run_id)
@@ -114,7 +125,7 @@ class RunExecutorMixin:
                         else:
                             ts.cleanup.result.comment = "Skipped by user"
             else:
-                ts.cleanup.execute(self.run_data)
+                self._execute_test_case(ts.cleanup)
             self.db.append_result(ts.cleanup.result, run_id)
             self._update_run()
             self._test_done(ts.cleanup.result.result)
@@ -156,6 +167,32 @@ class RunExecutorMixin:
             self.run_thread.join()
 
     def _run(self):
+        try:
+            self._run_impl()
+        except BaseException as exc:
+            self.logger.error(f"Unhandled run exception: {exc}")
+            if self.test_run and self.test_run.start_date:
+                if self.test_run.end_date is None:
+                    self.test_run.end()
+                self.test_run.result = TestResult.TestEval.ERROR
+                if self.test_run.run_id is not None:
+                    try:
+                        self.db.update_run_end(self.test_run)
+                    except Exception as db_exc:
+                        self.logger.error(f"Failed to persist run failure: {db_exc}")
+        finally:
+            self.run_data = None
+            self.running = False
+            self.status_str = "Idle"
+            self.active_test = -1
+            self.dialog.close()
+            self.attachment.set_run(None)
+            try:
+                self._update_tester()
+            except Exception as state_exc:
+                self.logger.error(f"Failed to publish final run state: {state_exc}")
+
+    def _run_impl(self):
         self.interface.emit_event(TesterRequest.LogClear.value)
         self.select_program(self.active_program.name, reset_attr=False)
         self._timer_update()
@@ -173,7 +210,9 @@ class RunExecutorMixin:
         if self.active_program.sn_generator is not None:
             try:
                 tc = self.active_program.sn_generator
-                tc.execute(self.run_data)
+                self._execute_test_case(tc)
+                if tc.result.result == TestResult.TestEval.ERROR:
+                    raise RuntimeError(tc.result.comment or "serial number generator failed")
                 self.serial_number = str(tc.result.value)
                 self.logger.info(f"Generated serial number: {self.serial_number}")
                 self._update_tester()
@@ -196,7 +235,7 @@ class RunExecutorMixin:
         self._update_status(f"Executing {self.active_dut.name} Setup")
         if self.dut_setup:
             self._update_status(f"Executing Test Case '{self.dut_setup.config.name}'")
-            self.dut_setup.execute(self.run_data)
+            self._execute_test_case(self.dut_setup)
             skip_all = self.dut_setup.result.result != TestResult.TestEval.PASS
             if self.dut_setup.result.result == TestResult.TestEval.ABORTED:
                 self.abort_run = True
@@ -213,7 +252,7 @@ class RunExecutorMixin:
         self._update_status(f"Executing {self.active_dut.name} Cleanup")
         if self.dut_cleanup:
             self._update_status(f"Executing Test Case '{self.dut_cleanup.config.name}'")
-            self.dut_cleanup.execute(self.run_data)
+            self._execute_test_case(self.dut_cleanup)
             skip_all = self.dut_cleanup.result.result != TestResult.TestEval.PASS
             self.db.append_result(self.dut_cleanup.result, run_id)
             self._update_run()
