@@ -11,9 +11,9 @@ import {
     LinearProgress,
     Typography
 } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import _ from "lodash";
 import Markdown from 'markdown-to-jsx';
-import { alpha, useTheme } from '@mui/material/styles';
 import * as React from 'react';
 
 const MarkdownImageContext = React.createContext({});
@@ -53,7 +53,7 @@ const createMarkdownOptions = (theme) => ({
         pre: { props: { style: { overflowX: 'auto', background: theme.palette.action.hover, color: theme.palette.text.primary, padding: '12px', borderRadius: '6px' } } },
         blockquote: { props: { style: { color: theme.palette.text.secondary, margin: '16px 0', paddingLeft: '16px', borderLeft: `4px solid ${theme.palette.divider}` } } }
     }
-    });
+});
 
 export default function TestDialog(props) {
     const theme = useTheme();

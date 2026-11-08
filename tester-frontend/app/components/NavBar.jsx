@@ -1,5 +1,4 @@
 'use client';
-import { useState, useEffect } from 'react';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
 import { IconButton, Tooltip } from '@mui/material';
@@ -7,6 +6,7 @@ import { alpha, useTheme } from '@mui/material/styles';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useConnection } from '../contexts/ConnectionContext';
 import { socket } from '../socket';
 import { useColorMode } from './Providers';
@@ -62,10 +62,10 @@ export default function Sidebar() {
             setOperator(data?.tester?.operator ?? null);
         };
         socket.on('tester', onTester);
-        socket.on('state',  onState);
+        socket.on('state', onState);
         return () => {
             socket.off('tester', onTester);
-            socket.off('state',  onState);
+            socket.off('state', onState);
         };
     }, []);
 

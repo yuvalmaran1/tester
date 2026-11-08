@@ -51,7 +51,7 @@ export default function ResultsPage() {
         };
         if (filters.result && r.result !== filters.result) return false;
         return match('dut', 'dut') && match('program', 'program') &&
-               match('serial_number', 'serial_number') && match('operator', 'operator');
+            match('serial_number', 'serial_number') && match('operator', 'operator');
     });
 
     const hasFilters = Object.values(filters).some(v => v !== '');

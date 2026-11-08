@@ -21,7 +21,6 @@ import {
 } from '@mui/material';
 import _ from 'lodash';
 import Image from 'next/image';
-import Link from 'next/link';
 import * as React from 'react';
 import LogModal from './components/LogModal';
 import LoginDialog from './components/LoginDialog';
@@ -136,20 +135,20 @@ export default function Home() {
 
     const calcProgress = (t) => {
         const total = _.get(t, 'total', 0);
-        const done  = _.get(t, 'done',  0);
+        const done = _.get(t, 'done', 0);
         setProgress(total === 0 ? 0 : (100 * done) / total);
         setCanReport(done === total && total !== 0);
     };
 
-    const reload   = () => socket.emit('reload');
+    const reload = () => socket.emit('reload');
     const setAttributes = (attr) => socket.emit('attr', attr);
     const handleDialogClose = (response, responseData) =>
         socket.emit('dialog_response', response, responseData);
 
-    const running       = _.get(tester, 'running',  false);
-    const stopping      = _.get(tester, 'stopping', false);
+    const running = _.get(tester, 'running', false);
+    const stopping = _.get(tester, 'stopping', false);
     const hasSNGenerator = _.get(activeProgram, 'has_sn_generator', false);
-    const snMissing     = !running && !hasSNGenerator && !serialNumber;
+    const snMissing = !running && !hasSNGenerator && !serialNumber;
 
     const hasAttr = Object.keys(
         _.get(activeProgram, 'attr_schema.properties', {})
@@ -236,20 +235,20 @@ export default function Home() {
 
                             {canReport && (
                                 <>
-                                <a
-                                    href="/get_report"
-                                    className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
-                                    style={{ backgroundColor: 'rgba(16,185,129,0.12)', color: 'var(--pass)', border: '1px solid rgba(16,185,129,0.3)' }}
-                                >
-                                    ↓ HTML
-                                </a>
-                                <a
-                                    href="/get_report_pdf"
-                                    className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
-                                    style={{ backgroundColor: 'rgba(239,68,68,0.12)', color: 'var(--fail)', border: '1px solid rgba(239,68,68,0.3)' }}
-                                >
-                                    ↓ PDF
-                                </a>
+                                    <a
+                                        href="/get_report"
+                                        className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
+                                        style={{ backgroundColor: 'rgba(16,185,129,0.12)', color: 'var(--pass)', border: '1px solid rgba(16,185,129,0.3)' }}
+                                    >
+                                        ↓ HTML
+                                    </a>
+                                    <a
+                                        href="/get_report_pdf"
+                                        className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
+                                        style={{ backgroundColor: 'rgba(239,68,68,0.12)', color: 'var(--fail)', border: '1px solid rgba(239,68,68,0.3)' }}
+                                    >
+                                        ↓ PDF
+                                    </a>
                                 </>
                             )}
                         </div>
@@ -275,90 +274,90 @@ export default function Home() {
                             </div>
                         )}
                         <div className="grid grid-cols-2 gap-3 flex-1 min-w-0">
-                        <div>
-                            <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>
-                                Device Under Test
-                            </label>
-                            <FormControl fullWidth size="small">
-                                <Select
-                                    disabled={running}
-                                    value={_.get(activeDut, 'name', '')}
-                                    onChange={(e) => handleDutChange(e.target.value)}
-                                    displayEmpty
-                                >
-                                    <MenuItem value="" disabled>
-                                        <span style={{ color: 'var(--text-muted)' }}>Select device…</span>
-                                    </MenuItem>
-                                    {duts.map((d, i) => (
-                                        <MenuItem key={i} value={d}>{d}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>
-                                Test Program
-                            </label>
-                            <FormControl fullWidth size="small">
-                                <Select
-                                    disabled={running}
-                                    value={_.get(activeProgram, 'name', '')}
-                                    onChange={(e) => handleProgramChange(e.target.value)}
-                                    displayEmpty
-                                >
-                                    <MenuItem value="" disabled>
-                                        <span style={{ color: 'var(--text-muted)' }}>Select program…</span>
-                                    </MenuItem>
-                                    {programs.map((p, i) => (
-                                        <MenuItem key={i} value={p}>{p}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </div>
+                            <div>
+                                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>
+                                    Device Under Test
+                                </label>
+                                <FormControl fullWidth size="small">
+                                    <Select
+                                        disabled={running}
+                                        value={_.get(activeDut, 'name', '')}
+                                        onChange={(e) => handleDutChange(e.target.value)}
+                                        displayEmpty
+                                    >
+                                        <MenuItem value="" disabled>
+                                            <span style={{ color: 'var(--text-muted)' }}>Select device…</span>
+                                        </MenuItem>
+                                        {duts.map((d, i) => (
+                                            <MenuItem key={i} value={d}>{d}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>
+                                    Test Program
+                                </label>
+                                <FormControl fullWidth size="small">
+                                    <Select
+                                        disabled={running}
+                                        value={_.get(activeProgram, 'name', '')}
+                                        onChange={(e) => handleProgramChange(e.target.value)}
+                                        displayEmpty
+                                    >
+                                        <MenuItem value="" disabled>
+                                            <span style={{ color: 'var(--text-muted)' }}>Select program…</span>
+                                        </MenuItem>
+                                        {programs.map((p, i) => (
+                                            <MenuItem key={i} value={p}>{p}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </div>
                         </div>
                     </div>
 
                     {/* Row 2.5: Serial number (hidden when program has a generator) */}
                     {!_.get(activeProgram, 'has_sn_generator', false) && (
-                    <div>
-                        <label className="block text-xs font-medium mb-1" style={{ color: snMissing ? 'var(--fail)' : 'var(--text-muted)' }}>
-                            Unit Serial Number {snMissing && <span style={{ fontWeight: 400 }}>— required</span>}
-                        </label>
-                        <input
-                            type="text"
-                            value={serialNumber}
-                            onChange={e => handleSerialChange(e.target.value)}
-                            disabled={running}
-                            placeholder="Scan or enter serial number…"
-                            style={{
-                                width: '100%', padding: '0.45rem 0.75rem',
-                                background: 'var(--bg-base)',
-                                border: `1px solid ${snMissing ? 'rgba(239,68,68,0.5)' : 'var(--border)'}`,
-                                borderRadius: 6, color: 'var(--text-primary)', fontSize: '0.875rem',
-                                outline: 'none', opacity: running ? 0.5 : 1,
-                            }}
-                        />
-                    </div>
+                        <div>
+                            <label className="block text-xs font-medium mb-1" style={{ color: snMissing ? 'var(--fail)' : 'var(--text-muted)' }}>
+                                Unit Serial Number {snMissing && <span style={{ fontWeight: 400 }}>— required</span>}
+                            </label>
+                            <input
+                                type="text"
+                                value={serialNumber}
+                                onChange={e => handleSerialChange(e.target.value)}
+                                disabled={running}
+                                placeholder="Scan or enter serial number…"
+                                style={{
+                                    width: '100%', padding: '0.45rem 0.75rem',
+                                    background: 'var(--bg-base)',
+                                    border: `1px solid ${snMissing ? 'rgba(239,68,68,0.5)' : 'var(--border)'}`,
+                                    borderRadius: 6, color: 'var(--text-primary)', fontSize: '0.875rem',
+                                    outline: 'none', opacity: running ? 0.5 : 1,
+                                }}
+                            />
+                        </div>
                     )}
 
                     {/* Row 3: Stats */}
                     <div className="flex items-center gap-3 flex-wrap">
-                        <STAT label="Done"    value={`${_.get(tester,'done',0)}/${_.get(tester,'total',0)}`} color="var(--accent)" />
-                        <STAT label="Pass"    value={_.get(tester,'pass',0)}    color="var(--pass)" />
-                        <STAT label="Fail"    value={_.get(tester,'fail',0)}    color="var(--fail)" />
-                        <STAT label="Error"   value={_.get(tester,'error',0)}   color="var(--error)" />
-                        <STAT label="Skipped" value={_.get(tester,'skip',0)} color="var(--text-muted)" />
-                        {_.get(tester,'aborted',0) > 0 &&
-                            <STAT label="Aborted" value={_.get(tester,'aborted',0)} color="var(--abort)" />
+                        <STAT label="Done" value={`${_.get(tester, 'done', 0)}/${_.get(tester, 'total', 0)}`} color="var(--accent)" />
+                        <STAT label="Pass" value={_.get(tester, 'pass', 0)} color="var(--pass)" />
+                        <STAT label="Fail" value={_.get(tester, 'fail', 0)} color="var(--fail)" />
+                        <STAT label="Error" value={_.get(tester, 'error', 0)} color="var(--error)" />
+                        <STAT label="Skipped" value={_.get(tester, 'skip', 0)} color="var(--text-muted)" />
+                        {_.get(tester, 'aborted', 0) > 0 &&
+                            <STAT label="Aborted" value={_.get(tester, 'aborted', 0)} color="var(--abort)" />
                         }
                         <div className="flex-1 min-w-32">
                             <LinearProgress variant="determinate" value={progress} sx={{ height: 4, borderRadius: 2 }} />
                             <div className="flex justify-between mt-1">
                                 <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                                    {_.get(tester,'text','Idle')}
+                                    {_.get(tester, 'text', 'Idle')}
                                 </span>
                                 <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
-                                    {_.get(tester,'elapsed','00:00:00')}
+                                    {_.get(tester, 'elapsed', '00:00:00')}
                                 </span>
                             </div>
                         </div>

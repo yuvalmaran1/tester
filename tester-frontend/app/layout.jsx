@@ -1,9 +1,9 @@
 import { Inter } from 'next/font/google';
-import './globals.css';
 import Sidebar from './components/NavBar';
 import Providers from './components/Providers';
 import TitleSync from './components/TitleSync';
 import { ConnectionProvider } from './contexts/ConnectionContext';
+import './globals.css';
 
 const inter = Inter({
     subsets: ['latin'],

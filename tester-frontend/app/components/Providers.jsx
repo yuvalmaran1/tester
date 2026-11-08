@@ -1,7 +1,7 @@
 'use client';
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { socket } from '../socket';
 
 const sharedPalette = {

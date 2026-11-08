@@ -14,28 +14,23 @@
     // attr merge chain (later wins):
     //   TestCase defaults → TestSuite.attr → TestProgram.attr → ts_attr override
     // ──────────────────────────────────────────────────────────────────────────
-
     "duts": [
         {
             "name": "Smart Sensor Board",
             "description": "Wi-Fi + BLE IoT sensor node with temperature/humidity sensors",
             "product_id": "SSB-001-A",
             "image": "./assets/example.png",
-
             // Module that contains DutSetup / DutCleanup
-            "module":  "tests.generic_tests",
-            "setup":   "DutSetup",
+            "module": "tests.generic_tests",
+            "setup": "DutSetup",
             "cleanup": "DutCleanup",
-
             // ── Test suite definitions ─────────────────────────────────────
-
             "testsuites": [
-
                 // ── Power Rails ───────────────────────────────────────────
                 {
                     "name": "Power Rails",
-                    "module":  "tests.generic_tests",
-                    "setup":   "SuiteSetup",
+                    "module": "tests.generic_tests",
+                    "setup": "SuiteSetup",
                     "cleanup": "SuiteCleanup",
                     "testcases": [
                         {
@@ -43,70 +38,103 @@
                             "module": "tests.power_tests",
                             "test": "VoltageRailTest",
                             "unit": "V",
-                            "tolerance": {"min": 3.234, "max": 3.366},
-                            "attr": {"rail": "3v3"}
+                            "tolerance": {
+                                "min": 3.234,
+                                "max": 3.366
+                            },
+                            "attr": {
+                                "rail": "3v3"
+                            }
                         },
                         {
                             "name": "1.8 V Rail (PSU)",
                             "module": "tests.power_tests",
                             "test": "VoltageRailTest",
                             "unit": "V",
-                            "tolerance": {"min": 1.764, "max": 1.836},
-                            "attr": {"rail": "1v8"}
+                            "tolerance": {
+                                "min": 1.764,
+                                "max": 1.836
+                            },
+                            "attr": {
+                                "rail": "1v8"
+                            }
                         },
                         {
                             "name": "5 V Rail (PSU)",
                             "module": "tests.power_tests",
                             "test": "VoltageRailTest",
                             "unit": "V",
-                            "tolerance": {"min": 4.900, "max": 5.100},
-                            "attr": {"rail": "5v"}
+                            "tolerance": {
+                                "min": 4.900,
+                                "max": 5.100
+                            },
+                            "attr": {
+                                "rail": "5v"
+                            }
                         },
                         {
                             "name": "3.3 V Rail (DMM)",
                             "module": "tests.power_tests",
                             "test": "IndependentVoltageTest",
                             "unit": "V",
-                            "tolerance": {"min": 3.267, "max": 3.333},
-                            "attr": {"rail": "3v3"}
+                            "tolerance": {
+                                "min": 3.267,
+                                "max": 3.333
+                            },
+                            "attr": {
+                                "rail": "3v3"
+                            }
                         },
                         {
                             "name": "Idle Current",
                             "module": "tests.power_tests",
                             "test": "CurrentDrawTest",
                             "unit": "mA",
-                            "tolerance": {"min": 30.0, "max": 70.0},
-                            "attr": {"state": "idle"}
+                            "tolerance": {
+                                "min": 30.0,
+                                "max": 70.0
+                            },
+                            "attr": {
+                                "state": "idle"
+                            }
                         },
                         {
                             "name": "Active Current",
                             "module": "tests.power_tests",
                             "test": "CurrentDrawTest",
                             "unit": "mA",
-                            "tolerance": {"min": 90.0, "max": 165.0},
-                            "attr": {"state": "active"}
+                            "tolerance": {
+                                "min": 90.0,
+                                "max": 165.0
+                            },
+                            "attr": {
+                                "state": "active"
+                            }
                         }
                     ]
                 },
-
                 // ── Firmware ──────────────────────────────────────────────
                 {
                     "name": "Firmware",
-                    "module":  "tests.generic_tests",
-                    "setup":   "SuiteSetup",
+                    "module": "tests.generic_tests",
+                    "setup": "SuiteSetup",
                     "cleanup": "SuiteCleanup",
                     "testcases": [
                         {
                             "name": "Firmware Version",
                             "module": "tests.firmware_tests",
                             "test": "FirmwareVersionTest",
-                            "tolerance": {"expected": "2.1.4"}
+                            "tolerance": {
+                                "expected": "2.1.4"
+                            }
                         },
                         {
                             "name": "Bootloader Version",
                             "module": "tests.firmware_tests",
                             "test": "BootloaderVersionTest",
-                            "tolerance": {"expected": "1.0.3"}
+                            "tolerance": {
+                                "expected": "1.0.3"
+                            }
                         },
                         {
                             "name": "Flash CRC",
@@ -115,12 +143,11 @@
                         }
                     ]
                 },
-
                 // ── Memory ────────────────────────────────────────────────
                 {
                     "name": "Memory",
-                    "module":  "tests.generic_tests",
-                    "setup":   "SuiteSetup",
+                    "module": "tests.generic_tests",
+                    "setup": "SuiteSetup",
                     "cleanup": "SuiteCleanup",
                     "testcases": [
                         {
@@ -140,12 +167,11 @@
                         }
                     ]
                 },
-
                 // ── Sensors ───────────────────────────────────────────────
                 {
                     "name": "Sensors",
-                    "module":  "tests.generic_tests",
-                    "setup":   "SuiteSetup",
+                    "module": "tests.generic_tests",
+                    "setup": "SuiteSetup",
                     "cleanup": "SuiteCleanup",
                     "testcases": [
                         {
@@ -153,14 +179,20 @@
                             "module": "tests.sensor_tests",
                             "test": "TemperatureErrorTest",
                             "unit": "°C",
-                            "tolerance": {"min": -2.0, "max": 2.0}
+                            "tolerance": {
+                                "min": -2.0,
+                                "max": 2.0
+                            }
                         },
                         {
                             "name": "Humidity Error (raw)",
                             "module": "tests.sensor_tests",
                             "test": "HumidityErrorTest",
                             "unit": "%RH",
-                            "tolerance": {"min": -3.0, "max": 3.0}
+                            "tolerance": {
+                                "min": -3.0,
+                                "max": 3.0
+                            }
                         },
                         {
                             "name": "Temperature Noise Sweep",
@@ -168,17 +200,21 @@
                             "test": "TemperatureSweepTest",
                             "unit": "°C",
                             "x_unit": "Sample",
-                            "tolerance": {"min": -3.0, "max": 3.0},
-                            "attr": {"n_samples": 20}
+                            "tolerance": {
+                                "min": -3.0,
+                                "max": 3.0
+                            },
+                            "attr": {
+                                "n_samples": 20
+                            }
                         }
                     ]
                 },
-
                 // ── Connectivity ──────────────────────────────────────────
                 {
                     "name": "Connectivity",
-                    "module":  "tests.generic_tests",
-                    "setup":   "SuiteSetup",
+                    "module": "tests.generic_tests",
+                    "setup": "SuiteSetup",
                     "cleanup": "SuiteCleanup",
                     "testcases": [
                         {
@@ -191,7 +227,10 @@
                             "module": "tests.connectivity_tests",
                             "test": "WiFiRSSITest",
                             "unit": "dBm",
-                            "tolerance": {"min": -75.0, "max": 0.0}
+                            "tolerance": {
+                                "min": -75.0,
+                                "max": 0.0
+                            }
                         },
                         {
                             "name": "BLE Advertising",
@@ -200,14 +239,13 @@
                         }
                     ]
                 },
-
                 // ── Calibration ───────────────────────────────────────────
                 // Compute offset → write to DUT NV storage.
                 // run_data carries the offset between the two test cases.
                 {
                     "name": "Calibration",
-                    "module":  "tests.generic_tests",
-                    "setup":   "SuiteSetup",
+                    "module": "tests.generic_tests",
+                    "setup": "SuiteSetup",
                     "cleanup": "SuiteCleanup",
                     "testcases": [
                         {
@@ -215,7 +253,10 @@
                             "module": "tests.programming_tests",
                             "test": "ComputeCalibrationTest",
                             "unit": "°C",
-                            "tolerance": {"min": -5.0, "max": 5.0}
+                            "tolerance": {
+                                "min": -5.0,
+                                "max": 5.0
+                            }
                         },
                         {
                             "name": "Write Cal Offset",
@@ -224,14 +265,13 @@
                         }
                     ]
                 },
-
                 // ── Programming ───────────────────────────────────────────
                 // Operator assigns serial number via UI dialog; test verifies
                 // the NV write-back.
                 {
                     "name": "Programming",
-                    "module":  "tests.generic_tests",
-                    "setup":   "SuiteSetup",
+                    "module": "tests.generic_tests",
+                    "setup": "SuiteSetup",
                     "cleanup": "SuiteCleanup",
                     "testcases": [
                         {
@@ -257,14 +297,15 @@
                     ]
                 }
             ],
-
             // ── Test programs ──────────────────────────────────────────────
-
             "programs": [
                 {
                     "name": "Quick Sanity",
                     "description": "Fast pre-production screen: power and firmware only (~30 s)",
-                    "testsuites": ["Power Rails", "Firmware"]
+                    "testsuites": [
+                        "Power Rails",
+                        "Firmware"
+                    ]
                 },
                 {
                     "name": "Full Production",
@@ -289,7 +330,10 @@
                     "name": "Calibration Only",
                     "description": "Re-calibration jig: sensor accuracy + calibration write (~1 min)",
                     "default_serial_number": "SSB-CAL-001",
-                    "testsuites": ["Sensors", "Calibration"]
+                    "testsuites": [
+                        "Sensors",
+                        "Calibration"
+                    ]
                 }
             ]
         }

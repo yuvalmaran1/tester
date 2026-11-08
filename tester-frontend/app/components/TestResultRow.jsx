@@ -5,12 +5,12 @@ import * as React from 'react';
 import ResultPlot from './ResultPlot';
 
 const RESULT_META = {
-    PASS:     { color: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.4)',  label: 'PASS'    },
-    FAIL:     { color: '#ef4444', bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.4)',   label: 'FAIL'    },
-    ERROR:    { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.4)',  label: 'ERROR'   },
-    INFOONLY: { color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  border: 'rgba(96,165,250,0.4)',  label: 'INFO'    },
-    SKIPPED:  { color: 'var(--text-muted)', bg: 'rgba(100,116,139,0.1)',  border: 'rgba(100,116,139,0.3)', label: 'SKIP'    },
-    ABORTED:  { color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.4)', label: 'ABORT'   },
+    PASS: { color: '#10b981', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.4)', label: 'PASS' },
+    FAIL: { color: '#ef4444', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.4)', label: 'FAIL' },
+    ERROR: { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.4)', label: 'ERROR' },
+    INFOONLY: { color: '#60a5fa', bg: 'rgba(96,165,250,0.12)', border: 'rgba(96,165,250,0.4)', label: 'INFO' },
+    SKIPPED: { color: 'var(--text-muted)', bg: 'rgba(100,116,139,0.1)', border: 'rgba(100,116,139,0.3)', label: 'SKIP' },
+    ABORTED: { color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.4)', label: 'ABORT' },
 };
 const DEFAULT_META = { color: 'var(--text-secondary)', bg: 'rgba(139,158,176,0.08)', border: 'rgba(139,158,176,0.2)', label: '—' };
 
@@ -31,18 +31,18 @@ export default function TestResultRow({ row, active, testCases = [], onExecuteCh
         }
     }, [active]);
 
-    const result   = _.get(row, 'Result', '');
-    const meta     = RESULT_META[result] || DEFAULT_META;
+    const result = _.get(row, 'Result', '');
+    const meta = RESULT_META[result] || DEFAULT_META;
 
     // Find matching test case
     const testCase = React.useMemo(() => {
         const suite = _.get(row, 'Suite', '');
-        const name  = _.get(row, 'Name',  '');
+        const name = _.get(row, 'Name', '');
         let tc = testCases.find(t => t.suite === suite && t.name === name);
         if (!tc) {
             const type = name.toLowerCase().includes('setup') ? 'setup'
-                       : name.toLowerCase().includes('cleanup') ? 'cleanup'
-                       : 'testcase';
+                : name.toLowerCase().includes('cleanup') ? 'cleanup'
+                    : 'testcase';
             tc = testCases.find(t => t.suite === suite && t.type === type);
         }
         return tc;
@@ -50,8 +50,8 @@ export default function TestResultRow({ row, active, testCases = [], onExecuteCh
 
     const suiteUnchecked = React.useMemo(() => {
         if (!testCase || testCase.type === 'setup' || testCase.type === 'cleanup') return false;
-        const suite   = testCase.suite;
-        const setup   = testCases.find(t => t.suite === suite && t.type === 'setup');
+        const suite = testCase.suite;
+        const setup = testCases.find(t => t.suite === suite && t.type === 'setup');
         const cleanup = testCases.find(t => t.suite === suite && t.type === 'cleanup');
         return (setup && !setup.execute) || (cleanup && !cleanup.execute);
     }, [testCase, testCases]);
@@ -81,9 +81,9 @@ export default function TestResultRow({ row, active, testCases = [], onExecuteCh
                 <TableCell align="center" sx={{ width: 64, opacity: (disabled || suiteUnchecked) ? 0.4 : 1 }}>
                     {testCase ? (
                         <Tooltip title={
-                            disabled       ? 'Cannot change while running' :
-                            suiteUnchecked ? 'Suite disabled' :
-                            testCase.execute ? 'Skip this test' : 'Enable this test'
+                            disabled ? 'Cannot change while running' :
+                                suiteUnchecked ? 'Suite disabled' :
+                                    testCase.execute ? 'Skip this test' : 'Enable this test'
                         }>
                             <Checkbox
                                 size="small"
@@ -137,8 +137,8 @@ export default function TestResultRow({ row, active, testCases = [], onExecuteCh
                     {result && (
                         <span className="badge" style={{
                             backgroundColor: meta.bg,
-                            color:           meta.color,
-                            border:          `1px solid ${meta.border}`,
+                            color: meta.color,
+                            border: `1px solid ${meta.border}`,
                         }}>
                             {meta.label}
                         </span>
