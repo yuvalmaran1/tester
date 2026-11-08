@@ -6,7 +6,7 @@ const RESULT_META = {
     PASS:    { color: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.3)'  },
     FAIL:    { color: '#ef4444', bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.3)'   },
     ERROR:   { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)'  },
-    SKIPPED: { color: '#64748b', bg: 'rgba(100,116,139,0.1)',  border: 'rgba(100,116,139,0.25)'},
+    SKIPPED: { color: 'var(--text-muted)', bg: 'rgba(100,116,139,0.1)',  border: 'rgba(100,116,139,0.25)'},
     ABORTED: { color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.3)' },
 };
 const DEFAULT_META = { color: '#60a5fa', bg: 'rgba(96,165,250,0.1)', border: 'rgba(96,165,250,0.25)' };
@@ -71,7 +71,7 @@ export default function TestRunRow({ row }) {
             {/* DUT */}
             <TableCell>
                 <a href={`/show_report/${runId}`}
-                    style={{ color: '#e2e8f0', fontWeight: 500, fontSize: '0.875rem' }}>
+                    style={{ color: 'var(--text-primary)', fontWeight: 500, fontSize: '0.875rem' }}>
                     {_.get(row, 'dut', '')}
                 </a>
             </TableCell>
@@ -79,28 +79,28 @@ export default function TestRunRow({ row }) {
             {/* Program */}
             <TableCell>
                 <a href={`/show_report/${runId}`}
-                    style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
+                    style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
                     {_.get(row, 'program', '')}
                 </a>
             </TableCell>
 
             {/* Serial Number */}
-            <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: sn ? '#e2e8f0' : '#334155' }}>
+            <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: sn ? 'var(--text-primary)' : 'var(--border)' }}>
                 {sn || '—'}
             </TableCell>
 
             {/* Operator */}
-            <TableCell sx={{ fontSize: '0.8rem', color: op ? '#94a3b8' : '#334155' }}>
+            <TableCell sx={{ fontSize: '0.8rem', color: op ? 'var(--text-secondary)' : 'var(--border)' }}>
                 {op || '—'}
             </TableCell>
 
             {/* Start date */}
-            <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b' }}>
+            <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 {_.get(row, 'start_date', '')}
             </TableCell>
 
             {/* Duration */}
-            <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b' }}>
+            <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 {formatDuration(_.get(row, 'start_date'), _.get(row, 'end_date'))}
             </TableCell>
 

@@ -4,7 +4,7 @@ import { socket } from '../socket';
 
 const FIELD = ({ label, children }) => (
     <div style={{ marginBottom: '0.75rem' }}>
-        <label style={{ color: '#8b9eb0', fontSize: '0.75rem', display: 'block', marginBottom: 4 }}>{label}</label>
+        <label style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'block', marginBottom: 4 }}>{label}</label>
         {children}
     </div>
 );
@@ -17,8 +17,8 @@ const INPUT = ({ value, onChange, type = 'text', placeholder = '' }) => (
         placeholder={placeholder}
         style={{
             width: '100%', padding: '0.45rem 0.65rem',
-            background: '#0d1117', border: '1px solid #2d3748',
-            borderRadius: 6, color: '#e2e8f0', fontSize: '0.85rem',
+            background: 'var(--bg-base)', border: '1px solid var(--border)',
+            borderRadius: 6, color: 'var(--text-primary)', fontSize: '0.85rem',
             outline: 'none', boxSizing: 'border-box',
         }}
     />
@@ -30,8 +30,8 @@ const SELECT = ({ value, onChange, children }) => (
         onChange={e => onChange(e.target.value)}
         style={{
             width: '100%', padding: '0.45rem 0.65rem',
-            background: '#0d1117', border: '1px solid #2d3748',
-            borderRadius: 6, color: '#e2e8f0', fontSize: '0.85rem',
+            background: 'var(--bg-base)', border: '1px solid var(--border)',
+            borderRadius: 6, color: 'var(--text-primary)', fontSize: '0.85rem',
             outline: 'none', boxSizing: 'border-box',
         }}
     >
@@ -40,15 +40,15 @@ const SELECT = ({ value, onChange, children }) => (
 );
 
 const BTN = ({ onClick, children, variant = 'primary', small = false, disabled = false }) => {
-    const bg = variant === 'primary' ? '#6366f1' : variant === 'danger' ? '#ef4444' : '#2d3748';
+    const bg = variant === 'primary' ? '#6366f1' : variant === 'danger' ? '#ef4444' : 'var(--border)';
     return (
         <button
             onClick={onClick}
             disabled={disabled}
             style={{
                 padding: small ? '0.3rem 0.65rem' : '0.5rem 1rem',
-                background: disabled ? '#2d3748' : bg,
-                color: disabled ? '#64748b' : '#fff',
+                background: disabled ? 'var(--border)' : bg,
+                color: disabled ? 'var(--text-muted)' : '#fff',
                 border: 'none', borderRadius: 6,
                 fontSize: small ? '0.75rem' : '0.85rem',
                 fontWeight: 600, cursor: disabled ? 'not-allowed' : 'pointer',
@@ -75,10 +75,10 @@ function AddOperatorForm({ onDone }) {
 
     return (
         <div style={{
-            background: '#161b22', border: '1px solid #2d3748', borderRadius: 8,
+            background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8,
             padding: '1rem', marginBottom: '1.5rem',
         }}>
-            <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.75rem' }}>
+            <div style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.75rem' }}>
                 Add Operator
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
@@ -112,7 +112,7 @@ function OperatorRow({ op, currentId, onUpdate, onDelete, onChangePassword }) {
         : { bg: 'rgba(16,185,129,0.1)', color: '#10b981', text: 'Operator' };
     const activeBadge = op.active
         ? { bg: 'rgba(16,185,129,0.1)', color: '#10b981', text: 'Active' }
-        : { bg: 'rgba(100,116,139,0.15)', color: '#64748b', text: 'Inactive' };
+        : { bg: 'rgba(100,116,139,0.15)', color: 'var(--text-muted)', text: 'Inactive' };
 
     const Badge = ({ bg, color, text }) => (
         <span style={{
@@ -125,12 +125,12 @@ function OperatorRow({ op, currentId, onUpdate, onDelete, onChangePassword }) {
         return (
             <div style={{
                 display: 'flex', alignItems: 'center', gap: '0.75rem',
-                padding: '0.6rem 0.75rem', background: '#0d1117',
+                padding: '0.6rem 0.75rem', background: 'var(--bg-base)',
                 borderRadius: 8, border: '1px solid #1e2a3a', marginBottom: '0.5rem',
             }}>
                 <div style={{ flex: 1 }}>
-                    <span style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.875rem' }}>{op.display_name}</span>
-                    <span style={{ color: '#64748b', fontSize: '0.75rem', marginLeft: 8 }}>@{op.username}</span>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.875rem' }}>{op.display_name}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginLeft: 8 }}>@{op.username}</span>
                 </div>
                 <Badge {...roleBadge} />
                 <Badge {...activeBadge} />
@@ -149,9 +149,9 @@ function OperatorRow({ op, currentId, onUpdate, onDelete, onChangePassword }) {
                             onChange={e => setNewPwd(e.target.value)}
                             placeholder="New password"
                             style={{
-                                padding: '0.3rem 0.5rem', background: '#0d1117',
-                                border: '1px solid #2d3748', borderRadius: 4,
-                                color: '#e2e8f0', fontSize: '0.8rem', outline: 'none', width: 130,
+                                padding: '0.3rem 0.5rem', background: 'var(--bg-base)',
+                                border: '1px solid var(--border)', borderRadius: 4,
+                                color: 'var(--text-primary)', fontSize: '0.8rem', outline: 'none', width: 130,
                             }}
                         />
                         <BTN small onClick={() => { onChangePassword(op.id, newPwd); setNewPwd(''); setShowPwd(false); }}
@@ -164,7 +164,7 @@ function OperatorRow({ op, currentId, onUpdate, onDelete, onChangePassword }) {
 
     return (
         <div style={{
-            padding: '0.75rem', background: '#0d1117', borderRadius: 8,
+            padding: '0.75rem', background: 'var(--bg-base)', borderRadius: 8,
             border: '1px solid #6366f1', marginBottom: '0.5rem',
         }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -233,7 +233,7 @@ export default function AdminPage() {
 
     if (!isAdmin) {
         return (
-            <div style={{ padding: '2rem', color: '#64748b', textAlign: 'center' }}>
+            <div style={{ padding: '2rem', color: 'var(--text-muted)', textAlign: 'center' }}>
                 Admin access required.
             </div>
         );
@@ -241,13 +241,13 @@ export default function AdminPage() {
 
     return (
         <div style={{ padding: '1.5rem', maxWidth: 760, margin: '0 auto' }}>
-            <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '1.1rem', marginBottom: '1.25rem' }}>
+            <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '1.1rem', marginBottom: '1.25rem' }}>
                 Operator Management
             </div>
 
             <AddOperatorForm onDone={refresh} />
 
-            <div style={{ color: '#8b9eb0', fontSize: '0.75rem', marginBottom: '0.5rem' }}>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginBottom: '0.5rem' }}>
                 {operators.length} operator{operators.length !== 1 ? 's' : ''}
             </div>
             {operators.map(op => (

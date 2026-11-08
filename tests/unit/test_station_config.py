@@ -15,7 +15,17 @@ class SampleConfig(StationConfig):
 
 def test_base_validates_empty_dict():
     sc = StationConfig.model_validate({})
-    assert sc is not None
+    assert sc.ui_theme == 'light'
+
+
+def test_base_accepts_dark_ui_theme():
+    sc = StationConfig.model_validate({'ui_theme': 'dark'})
+    assert sc.ui_theme == 'dark'
+
+
+def test_base_rejects_unknown_ui_theme():
+    with pytest.raises(ValidationError):
+        StationConfig.model_validate({'ui_theme': 'sepia'})
 
 
 def test_base_extra_fields_ignored():

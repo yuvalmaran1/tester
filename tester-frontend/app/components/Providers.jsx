@@ -1,24 +1,29 @@
 'use client';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { socket } from '../socket';
 
-const darkTheme = createTheme({
+const sharedPalette = {
+    primary: { main: '#4f46e5' },
+    success: { main: '#059669' },
+    warning: { main: '#d97706' },
+    error: { main: '#dc2626' },
+};
+
+const createAppTheme = (mode) => createTheme({
     palette: {
-        mode: 'dark',
-        background: {
-            default: '#0d1117',
-            paper:   '#161b2e',
-        },
-        primary:   { main: '#6366f1' },
-        secondary: { main: '#8b9eb0' },
-        success:   { main: '#10b981' },
-        warning:   { main: '#f59e0b' },
-        error:     { main: '#ef4444' },
+        mode,
+        ...sharedPalette,
+        secondary: { main: mode === 'dark' ? '#a5b4fc' : '#475569' },
+        background: mode === 'dark'
+            ? { default: '#0d1117', paper: '#161b2e' }
+            : { default: '#f8fafc', paper: '#ffffff' },
         text: {
-            primary:   '#e2e8f0',
-            secondary: '#8b9eb0',
+            primary: mode === 'dark' ? '#f1f5f9' : '#172033',
+            secondary: mode === 'dark' ? '#cbd5e1' : '#526077',
         },
-        divider: '#2d3748',
+        divider: mode === 'dark' ? '#3d4a5f' : '#d8e0ea',
     },
     shape: { borderRadius: 8 },
     typography: {
@@ -32,22 +37,75 @@ const darkTheme = createTheme({
         },
         MuiPopover: {
             styleOverrides: {
-                paper: { backgroundColor: '#1e2640', border: '1px solid #2d3748' },
+                paper: {
+                    backgroundColor: mode === 'dark' ? '#1e2640' : '#ffffff',
+                    border: `1px solid ${mode === 'dark' ? '#3d4a5f' : '#d8e0ea'}`,
+                },
             },
         },
         MuiMenu: {
             styleOverrides: {
-                paper: { backgroundColor: '#1e2640', border: '1px solid #2d3748' },
+                paper: {
+                    backgroundColor: mode === 'dark' ? '#1e2640' : '#ffffff',
+                    border: `1px solid ${mode === 'dark' ? '#3d4a5f' : '#d8e0ea'}`,
+                },
             },
         },
     },
 });
 
+const themes = {
+    light: createAppTheme('light'),
+    dark: createAppTheme('dark'),
+};
+
+const ColorModeContext = createContext();
+
+export const useColorMode = () => {
+    const context = useContext(ColorModeContext);
+    if (!context) throw new Error('useColorMode must be used within Providers');
+    return context;
+};
+
 export default function Providers({ children }) {
+    const [mode, setMode] = useState('light');
+    const userSelected = useRef(false);
+    const stationThemeApplied = useRef(false);
+
+    useEffect(() => {
+        const applyStationTheme = (payload) => {
+            const stationMode = payload?.tester?.ui_theme ?? payload?.ui_theme;
+            if (!stationThemeApplied.current && !userSelected.current && themes[stationMode]) {
+                stationThemeApplied.current = true;
+                setMode(stationMode);
+            }
+        };
+
+        socket.on('state', applyStationTheme);
+        socket.on('tester', applyStationTheme);
+        socket.emit('get_state');
+        return () => {
+            socket.off('state', applyStationTheme);
+            socket.off('tester', applyStationTheme);
+        };
+    }, []);
+
+    useEffect(() => {
+        document.documentElement.dataset.theme = mode;
+        document.documentElement.style.colorScheme = mode;
+    }, [mode]);
+
+    const toggleColorMode = () => {
+        userSelected.current = true;
+        setMode((currentMode) => currentMode === 'light' ? 'dark' : 'light');
+    };
+
     return (
-        <ThemeProvider theme={darkTheme}>
-            <CssBaseline />
-            {children}
-        </ThemeProvider>
+        <ColorModeContext.Provider value={{ mode, toggleColorMode }}>
+            <ThemeProvider theme={themes[mode]}>
+                <CssBaseline />
+                {children}
+            </ThemeProvider>
+        </ColorModeContext.Provider>
     );
 }

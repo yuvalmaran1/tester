@@ -20,32 +20,32 @@ export default function LogModal({ open, handleClose, log }) {
                 position: 'absolute', top: '50%', left: '50%',
                 transform: 'translate(-50%,-50%)',
                 width: '90%', maxWidth: 960, height: '80vh',
-                backgroundColor: '#0d1117',
-                border: '1px solid #2d3748',
+                backgroundColor: 'var(--bg-base)',
+                border: '1px solid var(--border)',
                 borderRadius: 12,
                 display: 'flex', flexDirection: 'column',
                 outline: 'none',
             }}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-3"
-                    style={{ borderBottom: '1px solid #2d3748' }}>
-                    <span className="font-semibold text-sm" style={{ color: '#e2e8f0' }}>
+                    style={{ borderBottom: '1px solid var(--border)' }}>
+                    <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
                         Framework Log
                     </span>
                     <IconButton onClick={handleClose} size="small"
-                        sx={{ color: '#64748b', '&:hover': { color: '#ef4444', backgroundColor: 'rgba(239,68,68,0.08)' } }}>
+                        sx={{ color: 'var(--text-muted)', '&:hover': { color: '#ef4444', backgroundColor: 'rgba(239,68,68,0.08)' } }}>
                         <CloseIcon fontSize="small" />
                     </IconButton>
                 </div>
 
                 {/* Log content */}
-                <div className="flex-1 overflow-y-auto p-4" style={{ backgroundColor: '#0d1117' }}>
+                <div className="flex-1 overflow-y-auto p-4" style={{ backgroundColor: 'var(--bg-base)' }}>
                     <pre style={{
                         margin: 0,
                         fontFamily: "'JetBrains Mono', 'Fira Code', 'Monaco', monospace",
                         fontSize: '13px',
                         lineHeight: '1.6',
-                        color: '#94a3b8',
+                        color: 'var(--text-secondary)',
                         whiteSpace: 'pre-wrap',
                         wordBreak: 'break-word',
                     }}>

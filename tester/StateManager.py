@@ -61,6 +61,7 @@ class StateManagerMixin:
             "dialog": self.dialog.encode(),
             "operator": self.current_operator,
             "serial_number": self.serial_number,
+            "ui_theme": self.station_config.ui_theme,
         }
         if emit:
             self.interface.emit_event(TesterRequest.Tester.value, self.state['tester'])

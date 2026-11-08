@@ -240,6 +240,11 @@
                             "test": "AssignSerialNumberTest"
                         },
                         {
+                            "name": "Markdown Instructions",
+                            "module": "tests.programming_tests",
+                            "test": "MarkdownInstructionsTest"
+                        },
+                        {
                             "name": "Interactive Programming",
                             "module": "tests.programming_tests",
                             "test": "InteractiveProgrammingTest"

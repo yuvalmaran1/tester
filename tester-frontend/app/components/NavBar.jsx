@@ -1,10 +1,15 @@
 'use client';
 import { useState, useEffect } from 'react';
+import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
+import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
+import { IconButton, Tooltip } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useConnection } from '../contexts/ConnectionContext';
 import { socket } from '../socket';
+import { useColorMode } from './Providers';
 
 const NAV = [
     {
@@ -40,6 +45,8 @@ const NAV = [
 ];
 
 export default function Sidebar() {
+    const theme = useTheme();
+    const { mode, toggleColorMode } = useColorMode();
     const pathname = usePathname();
     const { connected, connecting } = useConnection();
     const [testerName, setTesterName] = useState('');
@@ -69,24 +76,24 @@ export default function Sidebar() {
             className="flex flex-col shrink-0 h-screen"
             style={{
                 width: '220px',
-                backgroundColor: '#0d1117',
-                borderRight: '1px solid #2d3748',
+                backgroundColor: theme.palette.background.paper,
+                borderRight: `1px solid ${theme.palette.divider}`,
             }}
         >
             {/* Brand */}
-            <div style={{ borderBottom: '1px solid #2d3748', padding: '1rem 1.25rem' }}>
+            <div style={{ borderBottom: `1px solid ${theme.palette.divider}`, padding: '1rem 1.25rem' }}>
                 <div className="flex items-center gap-3">
                     <Image src="/icon.svg" alt="logo" width={34} height={34} style={{ flexShrink: 0 }} />
                     <div style={{ minWidth: 0 }}>
                         <div style={{
-                            color: '#e2e8f0', fontWeight: 700, fontSize: '0.875rem',
+                            color: theme.palette.text.primary, fontWeight: 700, fontSize: '0.875rem',
                             lineHeight: 1.25, overflow: 'hidden',
                             textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                         }}>
                             {testerName || 'HiL Framework'}
                         </div>
                         <div style={{
-                            color: '#6366f1', fontSize: '0.6875rem', fontWeight: 600,
+                            color: theme.palette.primary.main, fontSize: '0.6875rem', fontWeight: 600,
                             textTransform: 'uppercase', letterSpacing: '0.07em',
                             marginTop: '2px',
                         }}>
@@ -106,31 +113,44 @@ export default function Sidebar() {
                             href={href}
                             className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150"
                             style={{
-                                color:           active ? '#e2e8f0' : '#8b9eb0',
-                                backgroundColor: active ? 'rgba(99,102,241,0.15)' : 'transparent',
-                                borderLeft:      active ? '2px solid #6366f1' : '2px solid transparent',
+                                color: active ? theme.palette.text.primary : theme.palette.text.secondary,
+                                backgroundColor: active ? alpha(theme.palette.primary.main, 0.12) : 'transparent',
+                                borderLeft: active ? `2px solid ${theme.palette.primary.main}` : '2px solid transparent',
                             }}
                         >
-                            <span style={{ color: active ? '#818cf8' : '#64748b' }}>{icon}</span>
+                            <span style={{ color: active ? theme.palette.primary.main : theme.palette.text.secondary }}>{icon}</span>
                             {label}
                         </Link>
                     );
                 })}
             </nav>
 
+            <div className="px-4 py-2 flex justify-end">
+                <Tooltip title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}>
+                    <IconButton
+                        onClick={toggleColorMode}
+                        aria-label={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}
+                        size="small"
+                        sx={{ color: 'text.secondary' }}
+                    >
+                        {mode === 'light' ? <DarkModeOutlinedIcon /> : <LightModeOutlinedIcon />}
+                    </IconButton>
+                </Tooltip>
+            </div>
+
             {/* Operator info */}
             {operator && (
-                <div className="px-4 py-3" style={{ borderTop: '1px solid #2d3748' }}>
-                    <div style={{ color: '#8b9eb0', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
+                <div className="px-4 py-3" style={{ borderTop: `1px solid ${theme.palette.divider}` }}>
+                    <div style={{ color: theme.palette.text.secondary, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
                         Operator
                     </div>
                     <div className="flex items-center justify-between">
                         <div>
-                            <div style={{ color: '#e2e8f0', fontSize: '0.8rem', fontWeight: 600 }}>
+                            <div style={{ color: theme.palette.text.primary, fontSize: '0.8rem', fontWeight: 600 }}>
                                 {operator.display_name || operator.username}
                             </div>
                             {operator.role === 'admin' && (
-                                <Link href="/admin" style={{ color: '#6366f1', fontSize: '0.65rem', fontWeight: 600 }}>
+                                <Link href="/admin" style={{ color: theme.palette.primary.main, fontSize: '0.65rem', fontWeight: 600 }}>
                                     Admin Panel
                                 </Link>
                             )}
@@ -140,7 +160,7 @@ export default function Sidebar() {
                             title="Logout"
                             style={{
                                 background: 'none', border: 'none', cursor: 'pointer',
-                                color: '#64748b', padding: 4, borderRadius: 4,
+                                color: theme.palette.text.secondary, padding: 4, borderRadius: 4,
                             }}
                         >
                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,7 +173,7 @@ export default function Sidebar() {
             )}
 
             {/* Connection status */}
-            <div className="px-4 py-4" style={{ borderTop: '1px solid #2d3748' }}>
+            <div className="px-4 py-4" style={{ borderTop: `1px solid ${theme.palette.divider}` }}>
                 <div className="flex items-center gap-2.5">
                     <span
                         className="w-2 h-2 rounded-full shrink-0"
@@ -170,7 +190,7 @@ export default function Sidebar() {
                                     : '0 0 6px #ef4444',
                         }}
                     />
-                    <span className="text-xs font-medium" style={{ color: '#8b9eb0' }}>
+                    <span className="text-xs font-medium" style={{ color: theme.palette.text.secondary }}>
                         {connecting ? 'Connecting…' : connected ? 'System Online' : 'Disconnected'}
                     </span>
                 </div>

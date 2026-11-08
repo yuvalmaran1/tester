@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import _ from "lodash";
 import Markdown from 'markdown-to-jsx';
+import { alpha, useTheme } from '@mui/material/styles';
 import * as React from 'react';
 
 const MarkdownImageContext = React.createContext({});
@@ -39,7 +40,7 @@ const MarkdownImage = ({ src, alt, ...props }) => {
     );
 };
 
-const markdownOptions = {
+const createMarkdownOptions = (theme) => ({
     disableParsingRawHTML: true,
     overrides: {
         h1: { props: { style: { fontSize: '1.75rem', margin: '0 0 16px' } } },
@@ -48,13 +49,14 @@ const markdownOptions = {
         p: { props: { style: { lineHeight: 1.65, margin: '0 0 12px' } } },
         a: { props: { target: '_blank', rel: 'noopener noreferrer' } },
         img: { component: MarkdownImage },
-        code: { props: { style: { background: '#f1f5f9', padding: '2px 5px', borderRadius: '4px' } } },
-        pre: { props: { style: { overflowX: 'auto', background: '#f1f5f9', padding: '12px', borderRadius: '6px' } } },
-        blockquote: { props: { style: { margin: '16px 0', paddingLeft: '16px', borderLeft: '4px solid #94a3b8' } } }
+        code: { props: { style: { background: theme.palette.action.hover, color: theme.palette.text.primary, padding: '2px 5px', borderRadius: '4px' } } },
+        pre: { props: { style: { overflowX: 'auto', background: theme.palette.action.hover, color: theme.palette.text.primary, padding: '12px', borderRadius: '6px' } } },
+        blockquote: { props: { style: { color: theme.palette.text.secondary, margin: '16px 0', paddingLeft: '16px', borderLeft: `4px solid ${theme.palette.divider}` } } }
     }
-};
+    });
 
 export default function TestDialog(props) {
+    const theme = useTheme();
     const { onClose, data } = props;
     const [responseData, setResponseData] = React.useState(_.get(data, 'defaults', {}));
     const show = _.get(data, 'show', false);
@@ -79,18 +81,18 @@ export default function TestDialog(props) {
             fullWidth
             PaperProps={{
                 sx: {
-                    borderRadius: '16px',
+                    borderRadius: '8px',
                     boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.15), 0 10px 20px -5px rgba(0, 0, 0, 0.1)'
                 }
             }}
         >
             <DialogTitle sx={{
                 pb: 2,
-                borderBottom: '1px solid #e2e8f0'
+                borderBottom: `1px solid ${theme.palette.divider}`
             }}>
                 <Typography variant="h5" sx={{
                     fontWeight: 600,
-                    color: '#1e293b'
+                    color: 'text.primary'
                 }}>
                     {_.get(data, 'title', 'Test Dialog')}
                 </Typography>
@@ -100,7 +102,7 @@ export default function TestDialog(props) {
                     <Grid item xs={12}>
                         {_.get(data, 'text', '') && (
                             <Typography variant="body1" sx={{
-                                color: '#64748b',
+                                color: 'text.secondary',
                                 lineHeight: 1.6,
                                 mb: _.get(data, 'markdown', '') ? 2 : 0
                             }}>
@@ -109,8 +111,8 @@ export default function TestDialog(props) {
                         )}
                         {_.get(data, 'markdown', '') && (
                             <MarkdownImageContext.Provider value={_.get(data, 'markdown_images', {})}>
-                                <Box sx={{ color: '#334155', overflowWrap: 'anywhere' }}>
-                                    <Markdown options={markdownOptions}>
+                                <Box data-testid="dialog-markdown" sx={{ color: 'text.primary', overflowWrap: 'anywhere' }}>
+                                    <Markdown options={createMarkdownOptions(theme)}>
                                         {_.get(data, 'markdown', '')}
                                     </Markdown>
                                 </Box>
@@ -121,10 +123,10 @@ export default function TestDialog(props) {
                     {_.get(data, 'schema', {}).properties && Object.keys(_.get(data, 'schema', {}).properties).length > 0 && (
                         <Grid item xs={12}>
                             <Box sx={{
-                                backgroundColor: '#f8fafc',
+                                backgroundColor: 'background.default',
                                 borderRadius: '12px',
                                 p: 3,
-                                border: '1px solid #e2e8f0'
+                                border: `1px solid ${theme.palette.divider}`
                             }}>
                                 <JsonForms
                                     schema={_.get(data, 'schema', { "type": "object", "properties": {} })}
@@ -140,7 +142,7 @@ export default function TestDialog(props) {
                     <Grid item xs={12}>
                         <Box sx={{ mb: 2 }}>
                             <Typography variant="body2" sx={{
-                                color: '#64748b',
+                                color: 'text.secondary',
                                 mb: 1
                             }}>
                                 Progress: {Math.round(_.get(data, 'progress', 0))}%
@@ -151,10 +153,10 @@ export default function TestDialog(props) {
                                 sx={{
                                     height: 8,
                                     borderRadius: 4,
-                                    backgroundColor: '#e2e8f0',
+                                    backgroundColor: theme.palette.divider,
                                     '& .MuiLinearProgress-bar': {
                                         borderRadius: 4,
-                                        background: 'linear-gradient(90deg, #3b82f6 0%, #1e3a8a 100%)'
+                                        backgroundColor: theme.palette.primary.main
                                     }
                                 }}
                             />
@@ -179,16 +181,16 @@ export default function TestDialog(props) {
                                         borderRadius: '12px',
                                         fontWeight: 600,
                                         ...(rsp.toLowerCase() === 'ok' || rsp.toLowerCase() === 'yes' ? {
-                                            background: 'linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%)',
+                                            backgroundColor: theme.palette.primary.main,
                                             '&:hover': {
-                                                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)'
+                                                backgroundColor: theme.palette.primary.dark
                                             }
                                         } : {
-                                            borderColor: '#64748b',
-                                            color: '#64748b',
+                                            borderColor: theme.palette.text.secondary,
+                                            color: theme.palette.text.secondary,
                                             '&:hover': {
-                                                borderColor: '#475569',
-                                                backgroundColor: '#f1f5f9'
+                                                borderColor: theme.palette.text.primary,
+                                                backgroundColor: alpha(theme.palette.text.primary, 0.06)
                                             }
                                         })
                                     }}

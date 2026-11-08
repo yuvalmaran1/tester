@@ -32,9 +32,9 @@ import { SocketContext, socket } from './socket';
 
 const STAT = ({ label, value, color }) => (
     <div className="flex flex-col items-center justify-center px-4 py-2 rounded-lg"
-        style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${color}30`, minWidth: 72 }}>
+        style={{ background: 'var(--surface-hover)', border: `1px solid color-mix(in srgb, ${color} 25%, transparent)`, minWidth: 72 }}>
         <span className="text-xl font-bold font-mono leading-none" style={{ color }}>{value}</span>
-        <span className="text-xs mt-1 font-medium" style={{ color: '#64748b' }}>{label}</span>
+        <span className="text-xs mt-1 font-medium" style={{ color: 'var(--text-muted)' }}>{label}</span>
     </div>
 );
 
@@ -162,7 +162,7 @@ export default function Home() {
             {/* Offline overlay */}
             <Backdrop
                 open={!isOnline}
-                sx={{ color: '#fff', zIndex: 9999, backdropFilter: 'blur(4px)', backgroundColor: 'rgba(13,17,23,0.85)' }}
+                sx={{ color: '#fff', zIndex: 9999, backdropFilter: 'blur(4px)', backgroundColor: 'var(--overlay)' }}
             >
                 <div className="text-center space-y-4">
                     <CircularProgress color="inherit" size={48} />
@@ -187,15 +187,15 @@ export default function Home() {
             <div className="flex flex-col h-full">
                 {/* ── Control bar ── */}
                 <div className="shrink-0 px-6 pt-5 pb-4 space-y-4"
-                    style={{ borderBottom: '1px solid #2d3748', backgroundColor: '#0d1117' }}>
+                    style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'var(--bg-base)' }}>
 
                     {/* Row 1: tester info + run button */}
                     <div className="flex items-center justify-between gap-4">
                         <div className="min-w-0">
-                            <h1 className="text-lg font-bold leading-tight truncate" style={{ color: '#e2e8f0' }}>
+                            <h1 className="text-lg font-bold leading-tight truncate" style={{ color: 'var(--text-primary)' }}>
                                 {_.get(tester, 'name', 'Test Framework')}
                             </h1>
-                            <p className="text-xs truncate" style={{ color: '#64748b' }}>
+                            <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
                                 v{_.get(tester, 'version', '—')} · fw {_.get(tester, 'fw_version', '—')}
                             </p>
                         </div>
@@ -205,7 +205,7 @@ export default function Home() {
                                 onClick={reload}
                                 disabled={running || stopping}
                                 size="small"
-                                sx={{ color: '#64748b', '&:hover': { color: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)' } }}
+                                sx={{ color: 'var(--text-muted)', '&:hover': { color: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)' } }}
                             >
                                 <CachedIcon fontSize="small" />
                             </IconButton>
@@ -228,7 +228,7 @@ export default function Home() {
                                 </button>
                                 {snMissing && (
                                     <div className="absolute bottom-full right-0 mb-1.5 px-2 py-1 rounded text-xs whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
-                                        style={{ backgroundColor: '#1e293b', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}>
+                                        style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--fail)', border: '1px solid rgba(239,68,68,0.3)' }}>
                                         Serial number required
                                     </div>
                                 )}
@@ -239,14 +239,14 @@ export default function Home() {
                                 <a
                                     href="/get_report"
                                     className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
-                                    style={{ backgroundColor: 'rgba(16,185,129,0.12)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)' }}
+                                    style={{ backgroundColor: 'rgba(16,185,129,0.12)', color: 'var(--pass)', border: '1px solid rgba(16,185,129,0.3)' }}
                                 >
                                     ↓ HTML
                                 </a>
                                 <a
                                     href="/get_report_pdf"
                                     className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
-                                    style={{ backgroundColor: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}
+                                    style={{ backgroundColor: 'rgba(239,68,68,0.12)', color: 'var(--fail)', border: '1px solid rgba(239,68,68,0.3)' }}
                                 >
                                     ↓ PDF
                                 </a>
@@ -259,10 +259,10 @@ export default function Home() {
                     <div className="flex items-end gap-3">
                         {_.get(activeDut, 'name') && (
                             <div className="shrink-0">
-                                <label className="block text-xs font-medium mb-1" style={{ color: '#64748b' }}>
+                                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>
                                     DUT
                                 </label>
-                                <div style={{ width: 72, height: 40, border: '1px solid #2d3748', borderRadius: 6, backgroundColor: '#161b2e', overflow: 'hidden' }}>
+                                <div style={{ width: 72, height: 40, border: '1px solid var(--border)', borderRadius: 6, backgroundColor: 'var(--bg-card)', overflow: 'hidden' }}>
                                     <Image
                                         src={`/dut_image?dut=${encodeURIComponent(_.get(activeDut, 'name', ''))}`}
                                         alt={_.get(activeDut, 'name', 'Device under test')}
@@ -276,7 +276,7 @@ export default function Home() {
                         )}
                         <div className="grid grid-cols-2 gap-3 flex-1 min-w-0">
                         <div>
-                            <label className="block text-xs font-medium mb-1" style={{ color: '#64748b' }}>
+                            <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>
                                 Device Under Test
                             </label>
                             <FormControl fullWidth size="small">
@@ -287,7 +287,7 @@ export default function Home() {
                                     displayEmpty
                                 >
                                     <MenuItem value="" disabled>
-                                        <span style={{ color: '#64748b' }}>Select device…</span>
+                                        <span style={{ color: 'var(--text-muted)' }}>Select device…</span>
                                     </MenuItem>
                                     {duts.map((d, i) => (
                                         <MenuItem key={i} value={d}>{d}</MenuItem>
@@ -296,7 +296,7 @@ export default function Home() {
                             </FormControl>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium mb-1" style={{ color: '#64748b' }}>
+                            <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>
                                 Test Program
                             </label>
                             <FormControl fullWidth size="small">
@@ -307,7 +307,7 @@ export default function Home() {
                                     displayEmpty
                                 >
                                     <MenuItem value="" disabled>
-                                        <span style={{ color: '#64748b' }}>Select program…</span>
+                                        <span style={{ color: 'var(--text-muted)' }}>Select program…</span>
                                     </MenuItem>
                                     {programs.map((p, i) => (
                                         <MenuItem key={i} value={p}>{p}</MenuItem>
@@ -321,7 +321,7 @@ export default function Home() {
                     {/* Row 2.5: Serial number (hidden when program has a generator) */}
                     {!_.get(activeProgram, 'has_sn_generator', false) && (
                     <div>
-                        <label className="block text-xs font-medium mb-1" style={{ color: snMissing ? '#f87171' : '#64748b' }}>
+                        <label className="block text-xs font-medium mb-1" style={{ color: snMissing ? 'var(--fail)' : 'var(--text-muted)' }}>
                             Unit Serial Number {snMissing && <span style={{ fontWeight: 400 }}>— required</span>}
                         </label>
                         <input
@@ -332,9 +332,9 @@ export default function Home() {
                             placeholder="Scan or enter serial number…"
                             style={{
                                 width: '100%', padding: '0.45rem 0.75rem',
-                                background: '#0d1117',
-                                border: `1px solid ${snMissing ? 'rgba(239,68,68,0.5)' : '#2d3748'}`,
-                                borderRadius: 6, color: '#e2e8f0', fontSize: '0.875rem',
+                                background: 'var(--bg-base)',
+                                border: `1px solid ${snMissing ? 'rgba(239,68,68,0.5)' : 'var(--border)'}`,
+                                borderRadius: 6, color: 'var(--text-primary)', fontSize: '0.875rem',
                                 outline: 'none', opacity: running ? 0.5 : 1,
                             }}
                         />
@@ -343,21 +343,21 @@ export default function Home() {
 
                     {/* Row 3: Stats */}
                     <div className="flex items-center gap-3 flex-wrap">
-                        <STAT label="Done"    value={`${_.get(tester,'done',0)}/${_.get(tester,'total',0)}`} color="#818cf8" />
-                        <STAT label="Pass"    value={_.get(tester,'pass',0)}    color="#10b981" />
-                        <STAT label="Fail"    value={_.get(tester,'fail',0)}    color="#ef4444" />
-                        <STAT label="Error"   value={_.get(tester,'error',0)}   color="#f59e0b" />
-                        <STAT label="Skipped" value={_.get(tester,'skip',0)} color="#64748b" />
+                        <STAT label="Done"    value={`${_.get(tester,'done',0)}/${_.get(tester,'total',0)}`} color="var(--accent)" />
+                        <STAT label="Pass"    value={_.get(tester,'pass',0)}    color="var(--pass)" />
+                        <STAT label="Fail"    value={_.get(tester,'fail',0)}    color="var(--fail)" />
+                        <STAT label="Error"   value={_.get(tester,'error',0)}   color="var(--error)" />
+                        <STAT label="Skipped" value={_.get(tester,'skip',0)} color="var(--text-muted)" />
                         {_.get(tester,'aborted',0) > 0 &&
-                            <STAT label="Aborted" value={_.get(tester,'aborted',0)} color="#8b5cf6" />
+                            <STAT label="Aborted" value={_.get(tester,'aborted',0)} color="var(--abort)" />
                         }
                         <div className="flex-1 min-w-32">
                             <LinearProgress variant="determinate" value={progress} sx={{ height: 4, borderRadius: 2 }} />
                             <div className="flex justify-between mt-1">
-                                <span className="text-xs" style={{ color: '#64748b' }}>
+                                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                                     {_.get(tester,'text','Idle')}
                                 </span>
-                                <span className="text-xs font-mono" style={{ color: '#64748b' }}>
+                                <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
                                     {_.get(tester,'elapsed','00:00:00')}
                                 </span>
                             </div>
@@ -376,7 +376,7 @@ export default function Home() {
                                 Program Attributes
                             </button>
                             {showAttr && (
-                                <div className="mt-3 p-4 rounded-lg" style={{ backgroundColor: '#161b2e', border: '1px solid #2d3748' }}>
+                                <div className="mt-3 p-4 rounded-lg" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
                                     <JsonForms
                                         readonly={running}
                                         schema={_.get(activeProgram, 'attr_schema', { type: 'object', properties: {} })}

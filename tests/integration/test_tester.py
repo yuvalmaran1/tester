@@ -38,6 +38,11 @@ def test_select_dut_sets_active_dut(make_tester):
     assert t.active_dut.name == "Test DUT"
 
 
+def test_tester_state_includes_station_ui_theme(make_tester):
+    t = make_tester()
+    assert t.state["tester"]["ui_theme"] == "light"
+
+
 def test_select_program_sets_active_program(make_tester):
     t = make_tester()
     assert t.active_program is not None
