@@ -1,9 +1,9 @@
 import { Inter } from 'next/font/google';
-import './globals.css';
 import Sidebar from './components/NavBar';
 import Providers from './components/Providers';
 import TitleSync from './components/TitleSync';
 import { ConnectionProvider } from './contexts/ConnectionContext';
+import './globals.css';
 
 const inter = Inter({
     subsets: ['latin'],
@@ -20,7 +20,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
     return (
         <html lang="en">
-            <body className={inter.className} style={{ backgroundColor: '#0d1117' }}>
+            <body className={inter.className}>
                 <Providers>
                     <ConnectionProvider>
                         <TitleSync />

@@ -44,23 +44,23 @@ export default function ResultPlot(props) {
                                         value: _.get(plotData, 'xlabel', 'X'),
                                         position: 'insideBottom',
                                         offset: -10,
-                                        style: { textAnchor: 'middle', fill: '#94a3b8' }
+                                        style: { textAnchor: 'middle', fill: 'var(--text-secondary)' }
                                     }}
                                     tickFormatter={(value) => value.toFixed(2)}
-                                    tick={{ fill: '#64748b', fontSize: 12 }}
-                                    axisLine={{ stroke: '#334155' }}
-                                    tickLine={{ stroke: '#334155' }}
+                                    tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+                                    axisLine={{ stroke: 'var(--border)' }}
+                                    tickLine={{ stroke: 'var(--border)' }}
                                 />
                                 <YAxis
                                     label={{
                                         value: _.get(plotData, 'ylabel', 'Y'),
                                         angle: -90,
                                         position: 'insideLeft',
-                                        style: { textAnchor: 'middle', fill: '#94a3b8' }
+                                        style: { textAnchor: 'middle', fill: 'var(--text-secondary)' }
                                     }}
-                                    tick={{ fill: '#64748b', fontSize: 12 }}
-                                    axisLine={{ stroke: '#334155' }}
-                                    tickLine={{ stroke: '#334155' }}
+                                    tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+                                    axisLine={{ stroke: 'var(--border)' }}
+                                    tickLine={{ stroke: 'var(--border)' }}
                                 />
                                 <Tooltip
                                     formatter={(value, name) => [
@@ -71,19 +71,19 @@ export default function ResultPlot(props) {
                                     ]}
                                     labelFormatter={(value) => `${_.get(plotData, 'xlabel', 'X')}: ${value.toFixed(3)}`}
                                     contentStyle={{
-                                        backgroundColor: '#1e293b',
-                                        border: '1px solid #334155',
+                                        backgroundColor: 'var(--bg-elevated)',
+                                        border: '1px solid var(--border)',
                                         borderRadius: '8px',
-                                        color: '#e2e8f0',
+                                        color: 'var(--text-primary)',
                                     }}
-                                    labelStyle={{ color: '#94a3b8', marginBottom: 4 }}
-                                    itemStyle={{ color: '#e2e8f0' }}
+                                    labelStyle={{ color: 'var(--text-secondary)', marginBottom: 4 }}
+                                    itemStyle={{ color: 'var(--text-primary)' }}
                                 />
                                 <Legend
                                     verticalAlign="middle"
                                     align="right"
                                     layout="vertical"
-                                    wrapperStyle={{ paddingLeft: '20px', color: '#94a3b8' }}
+                                    wrapperStyle={{ paddingLeft: '20px', color: 'var(--text-secondary)' }}
                                 />
                                 <Line
                                     type="monotone"

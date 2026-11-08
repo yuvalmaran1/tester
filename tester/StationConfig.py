@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -22,6 +24,11 @@ class StationConfig(BaseModel):
         )
 
     Unknown keys in the JSON file are ignored by default.
+
+    ``ui_theme`` controls the web UI's initial light/dark mode for every
+    station. Operators can still switch modes from the sidebar.
     """
 
     model_config = ConfigDict(extra='ignore')
+
+    ui_theme: Literal['light', 'dark'] = 'light'

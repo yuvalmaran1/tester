@@ -14,7 +14,7 @@ const TestHistogram = ({ testResults, testType, testName }) => {
 
     if (validResults.length === 0) {
         return (
-            <Card sx={{ marginBottom: 2, border: '1px solid #e0e0e0' }}>
+            <Card sx={{ marginBottom: 2, border: '1px solid var(--border)' }}>
                 <CardContent>
                     <Typography variant="h6" color="textSecondary" align="center">
                         No valid data for histogram
@@ -33,7 +33,7 @@ const TestHistogram = ({ testResults, testType, testName }) => {
 
         if (numericValues.length === 0) {
             return (
-                <Card sx={{ marginBottom: 2, border: '1px solid #e0e0e0' }}>
+                <Card sx={{ marginBottom: 2, border: '1px solid var(--border)' }}>
                     <CardContent>
                         <Typography variant="h6" color="textSecondary" align="center">
                             No valid numeric data for histogram
@@ -136,7 +136,7 @@ const TestHistogram = ({ testResults, testType, testName }) => {
     }
 
     return (
-        <Card sx={{ marginBottom: 2, border: '1px solid #e0e0e0' }}>
+        <Card sx={{ marginBottom: 2, border: '1px solid var(--border)' }}>
             <CardContent>
                 <Typography variant="h6" gutterBottom>
                     Value Distribution - {testName}

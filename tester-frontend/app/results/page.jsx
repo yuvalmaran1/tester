@@ -9,10 +9,10 @@ import { useConnection } from '../contexts/ConnectionContext';
 const RESULTS = ['', 'PASS', 'FAIL', 'ERROR', 'SKIPPED', 'ABORTED'];
 
 const FILTER_INPUT_SX = {
-    background: '#0d1117',
-    border: '1px solid #2d3748',
+    background: 'var(--bg-base)',
+    border: '1px solid var(--border)',
     borderRadius: 6,
-    color: '#e2e8f0',
+    color: 'var(--text-primary)',
     fontSize: '0.75rem',
     padding: '0.3rem 0.5rem',
     outline: 'none',
@@ -51,14 +51,14 @@ export default function ResultsPage() {
         };
         if (filters.result && r.result !== filters.result) return false;
         return match('dut', 'dut') && match('program', 'program') &&
-               match('serial_number', 'serial_number') && match('operator', 'operator');
+            match('serial_number', 'serial_number') && match('operator', 'operator');
     });
 
     const hasFilters = Object.values(filters).some(v => v !== '');
 
     return (
         <main className="animate-fade-in p-6">
-            <Backdrop open={!isOnline} sx={{ color: '#fff', zIndex: 9999, backdropFilter: 'blur(4px)', backgroundColor: 'rgba(13,17,23,0.85)' }}>
+            <Backdrop open={!isOnline} sx={{ color: '#fff', zIndex: 9999, backdropFilter: 'blur(4px)', backgroundColor: 'var(--overlay)' }}>
                 <div className="text-center space-y-3">
                     <CircularProgress color="inherit" size={40} />
                     <p className="text-sm font-medium">{connecting ? 'Connecting…' : 'Backend Disconnected'}</p>
@@ -68,8 +68,8 @@ export default function ResultsPage() {
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <div>
-                    <h1 className="text-2xl font-bold" style={{ color: '#e2e8f0' }}>Runs</h1>
-                    <p className="text-sm mt-0.5" style={{ color: '#64748b' }}>
+                    <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Runs</h1>
+                    <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
                         {hasFilters ? `${filtered.length} of ${runs.length}` : runs.length} run{runs.length !== 1 ? 's' : ''}
                         {hasFilters && ' (filtered)'}
                     </p>
@@ -101,14 +101,14 @@ export default function ResultsPage() {
                 </div>
             ) : runs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 space-y-3">
-                    <svg className="w-12 h-12" style={{ color: '#334155' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-12 h-12" style={{ color: 'var(--border)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
                             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    <p className="text-sm font-medium" style={{ color: '#475569' }}>No runs yet</p>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>No runs yet</p>
                 </div>
             ) : (
-                <TableContainer component={Paper} sx={{ borderRadius: '10px', border: '1px solid #2d3748' }}>
+                <TableContainer component={Paper} sx={{ borderRadius: '10px', border: '1px solid var(--border)' }}>
                     <Table stickyHeader size="small">
                         <TableHead>
                             <TableRow>
@@ -123,7 +123,7 @@ export default function ResultsPage() {
                                 <TableCell align="center" sx={{ width: 96 }}>Result</TableCell>
                             </TableRow>
                             {/* Filter row */}
-                            <TableRow sx={{ '& th': { paddingTop: '4px', paddingBottom: '4px', backgroundColor: '#0d1117' } }}>
+                            <TableRow sx={{ '& th': { paddingTop: '4px', paddingBottom: '4px', backgroundColor: 'var(--bg-base)' } }}>
                                 <TableCell /><TableCell />
                                 <TableCell>
                                     <input style={FILTER_INPUT_SX} placeholder="Filter…" value={filters.dut}
@@ -149,13 +149,13 @@ export default function ResultsPage() {
                                         displayEmpty
                                         size="small"
                                         sx={{
-                                            fontSize: '0.7rem', color: filters.result ? '#e2e8f0' : '#64748b',
-                                            '& .MuiOutlinedInput-notchedOutline': { borderColor: '#2d3748' },
-                                            '& .MuiSvgIcon-root': { color: '#64748b' },
+                                            fontSize: '0.7rem', color: filters.result ? 'var(--text-primary)' : 'var(--text-muted)',
+                                            '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--border)' },
+                                            '& .MuiSvgIcon-root': { color: 'var(--text-muted)' },
                                             minWidth: 80,
                                         }}
                                     >
-                                        <MenuItem value=""><em style={{ color: '#64748b', fontSize: '0.7rem' }}>All</em></MenuItem>
+                                        <MenuItem value=""><em style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>All</em></MenuItem>
                                         {RESULTS.slice(1).map(r => (
                                             <MenuItem key={r} value={r} sx={{ fontSize: '0.75rem' }}>{r}</MenuItem>
                                         ))}
@@ -166,7 +166,7 @@ export default function ResultsPage() {
                         <TableBody>
                             {filtered.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={9} align="center" sx={{ py: 6, color: '#475569', fontSize: '0.875rem' }}>
+                                    <TableCell colSpan={9} align="center" sx={{ py: 6, color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
                                         No runs match the current filters
                                     </TableCell>
                                 </TableRow>

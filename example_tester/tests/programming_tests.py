@@ -12,13 +12,14 @@ This module demonstrates two advanced framework features:
    stored in run_data, proving the NV write succeeded.
 
 2. **TestDialog** — AssignSerialNumberTest suspends the run and prompts the
-   operator to enter a serial number via the UI.  The run continues only after
-   the operator clicks OK (or the 60-second timeout fires).
+    operator to enter a serial number via the UI. MarkdownInstructionsTest shows
+    formatted instructions with an embedded image.
 
 3. **Non-blocking TestDialog** — InteractiveProgrammingTest keeps the dialog
-    visible after the operator responds, then updates its message and progress
+    visible after the operator responds, then updates its Markdown and progress
     while simulated programming work continues.
 """
+from pathlib import Path
 import time
 
 from tester.TestConfig import TestConfig
@@ -27,6 +28,9 @@ from tester.TestResults.PassFailTestResult import PassFailTestCase
 from tester.TestResults.NumericTestResult import NumericTestCase
 from tester.TestUtil import AbortRunException, TestDialog
 from tester.TestLogger import TestLogger
+
+
+DIALOGS_PATH = Path(__file__).resolve().parents[1] / "dialogs"
 
 
 class ComputeCalibrationTest(NumericTestCase):
@@ -140,12 +144,28 @@ class AssignSerialNumberTest(PassFailTestCase):
         return TestResult.TestEval.PASS
 
 
+class MarkdownInstructionsTest(PassFailTestCase):
+    """Demonstrate a blocking Markdown dialog with an embedded local image."""
+    def _execute(self, config: TestConfig, assets, run_data: dict) -> TestResult.TestEval:
+        response = TestDialog().display(
+            title="Connect Programming Fixture",
+            markdown_file=DIALOGS_PATH / "fixture_setup.md",
+            responses=[TestDialog.Response.Ok, TestDialog.Response.Cancel],
+            timeout=60,
+        )
+
+        if (response or {}).get("rsp") != TestDialog.Response.Ok.name:
+            raise AbortRunException("Operator cancelled fixture setup")
+
+        return TestResult.TestEval.PASS
+
+
 class InteractiveProgrammingTest(PassFailTestCase):
-    """Demonstrate a multi-stage, non-blocking operator interaction."""
+    """Demonstrate a multi-stage, non-blocking Markdown dialog."""
     def _execute(self, config: TestConfig, assets, run_data: dict) -> TestResult.TestEval:
         dialog = TestDialog().display_non_blocking(
             title="Prepare Device Programming",
-            text="Put the DUT into programming mode, then press Ok.",
+            markdown_file=DIALOGS_PATH / "fixture_setup.md",
             responses=[TestDialog.Response.Ok, TestDialog.Response.Cancel],
         )
 
@@ -155,7 +175,8 @@ class InteractiveProgrammingTest(PassFailTestCase):
             raise AbortRunException("Operator cancelled interactive programming")
 
         dialog.update(
-            text="Programming in progress. Keep the fixture connected.",
+            title="Programming Device",
+            markdown_file=DIALOGS_PATH / "programming.md",
             responses=[],
             progress=0,
         )
@@ -163,7 +184,11 @@ class InteractiveProgrammingTest(PassFailTestCase):
             time.sleep(0.15)
             dialog.update(progress=progress)
 
-        dialog.update(text="Programming complete.", progress=100)
+        dialog.update(
+            title="Programming Complete",
+            markdown_file=DIALOGS_PATH / "programming_complete.md",
+            progress=100,
+        )
         time.sleep(0.5)
         dialog.close()
         self.set_comment("Completed interactive programming workflow")

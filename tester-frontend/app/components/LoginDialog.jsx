@@ -41,7 +41,7 @@ export default function LoginDialog({ show }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
             <div style={{
-                background: '#161b22', border: '1px solid #2d3748',
+                background: 'var(--bg-card)', border: '1px solid var(--border)',
                 borderRadius: '12px', padding: '2rem', width: '340px',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
             }}>
@@ -49,7 +49,7 @@ export default function LoginDialog({ show }) {
                 <div className="flex items-center gap-3 mb-6">
                     <Image src="/icon.svg" alt="logo" width={36} height={36} />
                     <div>
-                        <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '1rem' }}>HiL Framework</div>
+                        <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '1rem' }}>HiL Framework</div>
                         <div style={{ color: '#6366f1', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
                             Operator Login
                         </div>
@@ -58,7 +58,7 @@ export default function LoginDialog({ show }) {
 
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
-                        <label style={{ color: '#8b9eb0', fontSize: '0.8rem', display: 'block', marginBottom: 6 }}>
+                        <label style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', display: 'block', marginBottom: 6 }}>
                             Username
                         </label>
                         <input
@@ -68,14 +68,14 @@ export default function LoginDialog({ show }) {
                             autoFocus
                             style={{
                                 width: '100%', padding: '0.5rem 0.75rem',
-                                background: '#0d1117', border: '1px solid #2d3748',
-                                borderRadius: 6, color: '#e2e8f0', fontSize: '0.9rem',
+                                background: 'var(--bg-base)', border: '1px solid var(--border)',
+                                borderRadius: 6, color: 'var(--text-primary)', fontSize: '0.9rem',
                                 outline: 'none', boxSizing: 'border-box',
                             }}
                         />
                     </div>
                     <div className="mb-5">
-                        <label style={{ color: '#8b9eb0', fontSize: '0.8rem', display: 'block', marginBottom: 6 }}>
+                        <label style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', display: 'block', marginBottom: 6 }}>
                             Password
                         </label>
                         <input
@@ -84,8 +84,8 @@ export default function LoginDialog({ show }) {
                             onChange={e => setPassword(e.target.value)}
                             style={{
                                 width: '100%', padding: '0.5rem 0.75rem',
-                                background: '#0d1117', border: '1px solid #2d3748',
-                                borderRadius: 6, color: '#e2e8f0', fontSize: '0.9rem',
+                                background: 'var(--bg-base)', border: '1px solid var(--border)',
+                                borderRadius: 6, color: 'var(--text-primary)', fontSize: '0.9rem',
                                 outline: 'none', boxSizing: 'border-box',
                             }}
                         />

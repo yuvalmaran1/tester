@@ -5,14 +5,14 @@ import * as React from 'react';
 import ResultPlot from './ResultPlot';
 
 const RESULT_META = {
-    PASS:     { color: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.4)',  label: 'PASS'    },
-    FAIL:     { color: '#ef4444', bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.4)',   label: 'FAIL'    },
-    ERROR:    { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.4)',  label: 'ERROR'   },
-    INFOONLY: { color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  border: 'rgba(96,165,250,0.4)',  label: 'INFO'    },
-    SKIPPED:  { color: '#64748b', bg: 'rgba(100,116,139,0.1)',  border: 'rgba(100,116,139,0.3)', label: 'SKIP'    },
-    ABORTED:  { color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.4)', label: 'ABORT'   },
+    PASS: { color: '#10b981', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.4)', label: 'PASS' },
+    FAIL: { color: '#ef4444', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.4)', label: 'FAIL' },
+    ERROR: { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.4)', label: 'ERROR' },
+    INFOONLY: { color: '#60a5fa', bg: 'rgba(96,165,250,0.12)', border: 'rgba(96,165,250,0.4)', label: 'INFO' },
+    SKIPPED: { color: 'var(--text-muted)', bg: 'rgba(100,116,139,0.1)', border: 'rgba(100,116,139,0.3)', label: 'SKIP' },
+    ABORTED: { color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.4)', label: 'ABORT' },
 };
-const DEFAULT_META = { color: '#8b9eb0', bg: 'rgba(139,158,176,0.08)', border: 'rgba(139,158,176,0.2)', label: '—' };
+const DEFAULT_META = { color: 'var(--text-secondary)', bg: 'rgba(139,158,176,0.08)', border: 'rgba(139,158,176,0.2)', label: '—' };
 
 export default function TestResultRow({ row, active, testCases = [], onExecuteChange, disabled = false }) {
     const [showPlot, setShowPlot] = React.useState(false);
@@ -31,18 +31,18 @@ export default function TestResultRow({ row, active, testCases = [], onExecuteCh
         }
     }, [active]);
 
-    const result   = _.get(row, 'Result', '');
-    const meta     = RESULT_META[result] || DEFAULT_META;
+    const result = _.get(row, 'Result', '');
+    const meta = RESULT_META[result] || DEFAULT_META;
 
     // Find matching test case
     const testCase = React.useMemo(() => {
         const suite = _.get(row, 'Suite', '');
-        const name  = _.get(row, 'Name',  '');
+        const name = _.get(row, 'Name', '');
         let tc = testCases.find(t => t.suite === suite && t.name === name);
         if (!tc) {
             const type = name.toLowerCase().includes('setup') ? 'setup'
-                       : name.toLowerCase().includes('cleanup') ? 'cleanup'
-                       : 'testcase';
+                : name.toLowerCase().includes('cleanup') ? 'cleanup'
+                    : 'testcase';
             tc = testCases.find(t => t.suite === suite && t.type === type);
         }
         return tc;
@@ -50,8 +50,8 @@ export default function TestResultRow({ row, active, testCases = [], onExecuteCh
 
     const suiteUnchecked = React.useMemo(() => {
         if (!testCase || testCase.type === 'setup' || testCase.type === 'cleanup') return false;
-        const suite   = testCase.suite;
-        const setup   = testCases.find(t => t.suite === suite && t.type === 'setup');
+        const suite = testCase.suite;
+        const setup = testCases.find(t => t.suite === suite && t.type === 'setup');
         const cleanup = testCases.find(t => t.suite === suite && t.type === 'cleanup');
         return (setup && !setup.execute) || (cleanup && !cleanup.execute);
     }, [testCase, testCases]);
@@ -72,7 +72,7 @@ export default function TestResultRow({ row, active, testCases = [], onExecuteCh
                 sx={{
                     backgroundColor: rowBg,
                     borderLeft: active ? '2px solid #6366f1' : `2px solid ${result ? meta.border : 'transparent'}`,
-                    '&:hover': { backgroundColor: active ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.03)' },
+                    '&:hover': { backgroundColor: active ? 'rgba(99,102,241,0.12)' : 'var(--surface-hover)' },
                     transition: 'background-color 0.15s ease',
                     '& td': { borderBottom: '1px solid rgba(45,55,72,0.5)' },
                 }}
@@ -81,9 +81,9 @@ export default function TestResultRow({ row, active, testCases = [], onExecuteCh
                 <TableCell align="center" sx={{ width: 64, opacity: (disabled || suiteUnchecked) ? 0.4 : 1 }}>
                     {testCase ? (
                         <Tooltip title={
-                            disabled       ? 'Cannot change while running' :
-                            suiteUnchecked ? 'Suite disabled' :
-                            testCase.execute ? 'Skip this test' : 'Enable this test'
+                            disabled ? 'Cannot change while running' :
+                                suiteUnchecked ? 'Suite disabled' :
+                                    testCase.execute ? 'Skip this test' : 'Enable this test'
                         }>
                             <Checkbox
                                 size="small"
@@ -93,22 +93,22 @@ export default function TestResultRow({ row, active, testCases = [], onExecuteCh
                             />
                         </Tooltip>
                     ) : (
-                        <span style={{ color: '#334155' }}>—</span>
+                        <span style={{ color: 'var(--border)' }}>—</span>
                     )}
                 </TableCell>
 
                 {/* Time */}
-                <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b', width: 72 }}>
+                <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--text-muted)', width: 72 }}>
                     {_.get(row, 'Time', '—')}
                 </TableCell>
 
                 {/* Suite */}
-                <TableCell sx={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 500 }}>
+                <TableCell sx={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
                     {_.get(row, 'Suite', '')}
                 </TableCell>
 
                 {/* Test name */}
-                <TableCell sx={{ fontSize: '0.85rem', fontWeight: 600, color: active ? '#c7d2fe' : '#e2e8f0' }}>
+                <TableCell sx={{ fontSize: '0.85rem', fontWeight: 600, color: active ? '#c7d2fe' : 'var(--text-primary)' }}>
                     {_.get(row, 'Name', '—')}
                     {active && (
                         <span className="ml-2 inline-block w-1.5 h-1.5 rounded-full animate-pulse-slow"
@@ -117,18 +117,18 @@ export default function TestResultRow({ row, active, testCases = [], onExecuteCh
                 </TableCell>
 
                 {/* Min / Value / Max */}
-                <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b', width: 80 }}>
+                <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--text-muted)', width: 80 }}>
                     {_.get(row, 'Min', '')}
                 </TableCell>
-                <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 700, color: meta.color || '#e2e8f0', width: 80 }}>
+                <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 700, color: meta.color || 'var(--text-primary)', width: 80 }}>
                     {_.get(row, 'Value', '')}
                 </TableCell>
-                <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b', width: 80 }}>
+                <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--text-muted)', width: 80 }}>
                     {_.get(row, 'Max', '')}
                 </TableCell>
 
                 {/* Unit */}
-                <TableCell align="center" sx={{ fontSize: '0.75rem', color: '#64748b', width: 80 }}>
+                <TableCell align="center" sx={{ fontSize: '0.75rem', color: 'var(--text-muted)', width: 80 }}>
                     {_.get(row, 'Unit', '')}
                 </TableCell>
 
@@ -137,8 +137,8 @@ export default function TestResultRow({ row, active, testCases = [], onExecuteCh
                     {result && (
                         <span className="badge" style={{
                             backgroundColor: meta.bg,
-                            color:           meta.color,
-                            border:          `1px solid ${meta.border}`,
+                            color: meta.color,
+                            border: `1px solid ${meta.border}`,
                         }}>
                             {meta.label}
                         </span>
@@ -146,7 +146,7 @@ export default function TestResultRow({ row, active, testCases = [], onExecuteCh
                 </TableCell>
 
                 {/* Comment */}
-                <TableCell sx={{ fontSize: '0.75rem', color: '#64748b' }}>
+                <TableCell sx={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     {_.get(row, 'Comment', '')}
                 </TableCell>
             </TableRow>

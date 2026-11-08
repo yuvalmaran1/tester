@@ -5,25 +5,53 @@
 @tailwind utilities;
 
 :root {
-    --bg-base:     #0d1117;
-    --bg-card:     #161b2e;
-    --bg-elevated: #1e2640;
-    --border:      #2d3748;
-    --text-primary:   #e2e8f0;
-    --text-secondary: #8b9eb0;
-    --accent:      #6366f1;
-    --accent-hover:#818cf8;
-    --pass:   #10b981;
-    --fail:   #ef4444;
-    --error:  #f59e0b;
-    --skip:   #64748b;
-    --abort:  #8b5cf6;
-    --running:#3b82f6;
+    color-scheme: light;
+    --bg-base: #f8fafc;
+    --bg-card: #ffffff;
+    --bg-elevated: #eef2f7;
+    --border: #d8e0ea;
+    --text-primary: #172033;
+    --text-secondary: #526077;
+    --text-muted: #64748b;
+    --surface-hover: rgba(15, 23, 42, 0.05);
+    --overlay: rgba(248, 250, 252, 0.88);
+    --accent: #4f46e5;
+    --accent-hover: #4338ca;
+    --pass: #059669;
+    --fail: #dc2626;
+    --error: #d97706;
+    --skip: #64748b;
+    --abort: #7c3aed;
+    --running: #2563eb;
 }
 
-* { box-sizing: border-box; }
+:root[data-theme='dark'] {
+    color-scheme: dark;
+    --bg-base: #0d1117;
+    --bg-card: #161b2e;
+    --bg-elevated: #1e2640;
+    --border: #2d3748;
+    --text-primary: #e2e8f0;
+    --text-secondary: #8b9eb0;
+    --text-muted: #94a3b8;
+    --surface-hover: rgba(255, 255, 255, 0.05);
+    --overlay: rgba(13, 17, 23, 0.88);
+    --accent: #6366f1;
+    --accent-hover: #818cf8;
+    --pass: #10b981;
+    --fail: #ef4444;
+    --error: #f59e0b;
+    --skip: #64748b;
+    --abort: #8b5cf6;
+    --running: #3b82f6;
+}
 
-html, body {
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
     background-color: var(--bg-base);
     color: var(--text-primary);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -53,16 +81,52 @@ html, body {
     letter-spacing: 0.05em;
     text-transform: uppercase;
 }
-.badge-pass   { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
-.badge-fail   { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.3);  }
-.badge-error  { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
-.badge-skip   { background: rgba(100,116,139,0.15);color: #94a3b8; border: 1px solid rgba(100,116,139,0.3);}
-.badge-abort  { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
-.badge-unknown{ background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+
+.badge-pass {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-fail {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.badge-error {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-skip {
+    background: rgba(100, 116, 139, 0.15);
+    color: #94a3b8;
+    border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+.badge-abort {
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.badge-unknown {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
 
 /* ── MUI dark overrides ── */
-.MuiPaper-root { background-color: var(--bg-card) !important; }
-.MuiTableContainer-root { background-color: var(--bg-card) !important; }
+.MuiPaper-root {
+    background-color: var(--bg-card) !important;
+}
+
+.MuiTableContainer-root {
+    background-color: var(--bg-card) !important;
+}
+
 .MuiTableHead-root .MuiTableCell-root {
     background-color: var(--bg-elevated) !important;
     color: var(--text-secondary) !important;
@@ -72,35 +136,72 @@ html, body {
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
+
 .MuiTableBody-root .MuiTableCell-root {
-    border-bottom: 1px solid rgba(45,55,72,0.6) !important;
+    border-bottom: 1px solid rgba(45, 55, 72, 0.6) !important;
     color: var(--text-primary) !important;
 }
-.MuiTableRow-root:hover { background-color: rgba(99,102,241,0.05) !important; }
 
-.MuiSelect-root, .MuiOutlinedInput-root {
+.MuiTableRow-root:hover {
+    background-color: rgba(99, 102, 241, 0.05) !important;
+}
+
+.MuiSelect-root,
+.MuiOutlinedInput-root {
     background-color: var(--bg-elevated) !important;
     color: var(--text-primary) !important;
     border-radius: 8px !important;
 }
-.MuiOutlinedInput-notchedOutline { border-color: var(--border) !important; }
+
+.MuiOutlinedInput-notchedOutline {
+    border-color: var(--border) !important;
+}
+
 .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
     border-color: var(--accent) !important;
 }
+
 .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
     border-color: var(--accent) !important;
 }
-.MuiMenuItem-root { color: var(--text-primary) !important; }
-.MuiMenuItem-root:hover { background-color: rgba(99,102,241,0.12) !important; }
-.MuiInputLabel-root { color: var(--text-secondary) !important; }
-.MuiInputLabel-root.Mui-focused { color: var(--accent) !important; }
-.MuiSelect-icon { color: var(--text-secondary) !important; }
 
-.MuiCheckbox-root { color: var(--text-secondary) !important; }
-.MuiCheckbox-root.Mui-checked { color: var(--pass) !important; }
+.MuiMenuItem-root {
+    color: var(--text-primary) !important;
+}
 
-.MuiLinearProgress-root { background-color: var(--border) !important; border-radius: 4px; }
-.MuiLinearProgress-bar  { background-color: var(--accent) !important; border-radius: 4px; }
+.MuiMenuItem-root:hover {
+    background-color: rgba(99, 102, 241, 0.12) !important;
+}
+
+.MuiInputLabel-root {
+    color: var(--text-secondary) !important;
+}
+
+.MuiInputLabel-root.Mui-focused {
+    color: var(--accent) !important;
+}
+
+.MuiSelect-icon {
+    color: var(--text-secondary) !important;
+}
+
+.MuiCheckbox-root {
+    color: var(--text-secondary) !important;
+}
+
+.MuiCheckbox-root.Mui-checked {
+    color: var(--pass) !important;
+}
+
+.MuiLinearProgress-root {
+    background-color: var(--border) !important;
+    border-radius: 4px;
+}
+
+.MuiLinearProgress-bar {
+    background-color: var(--accent) !important;
+    border-radius: 4px;
+}
 
 .MuiTooltip-tooltip {
     background-color: var(--bg-elevated) !important;
@@ -116,34 +217,83 @@ html, body {
     letter-spacing: 0.04em !important;
 }
 
-.MuiTextField-root input, .MuiTextField-root textarea {
+.MuiTextField-root input,
+.MuiTextField-root textarea {
     color: var(--text-primary) !important;
 }
 
 /* ── Scrollbar ── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-base); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-base);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+}
 
 /* ── Animations ── */
 @keyframes slideIn {
-    from { opacity: 0; transform: translateX(-8px); }
-    to   { opacity: 1; transform: translateX(0);    }
-}
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-}
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.6; }
+    from {
+        opacity: 0;
+        transform: translateX(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
-.animate-slide-in  { animation: slideIn 0.25s ease-out; }
-.animate-fade-in   { animation: fadeIn  0.3s  ease-out; }
-.animate-pulse-slow{ animation: pulse   2s    ease-in-out infinite; }
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.animate-slide-in {
+    animation: slideIn 0.25s ease-out;
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.animate-pulse-slow {
+    animation: pulse 2s ease-in-out infinite;
+}
 
 /* ── Links ── */
-a { color: var(--accent); text-decoration: none; }
-a:hover { color: var(--accent-hover); }
+a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--accent-hover);
+}

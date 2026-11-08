@@ -132,6 +132,17 @@ class MyStationConfig(StationConfig):
 
 Fields not present in the JSON file take their default values. Extra keys in the JSON file are silently ignored.
 
+Every station also supports a built-in `ui_theme` setting. Use `"light"` or `"dark"`; when omitted, the UI starts in light mode:
+
+```json
+{
+  "ui_theme": "dark",
+  "serial_port": "COM3"
+}
+```
+
+Operators can switch modes at any time using the theme button in the sidebar. The station setting is reapplied when the UI is reloaded.
+
 The validated config object is passed to `_init()` and its fields are accessed by name:
 
 ```python

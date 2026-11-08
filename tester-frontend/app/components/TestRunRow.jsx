@@ -3,10 +3,10 @@ import { TableCell, TableRow } from '@mui/material';
 import _ from 'lodash';
 
 const RESULT_META = {
-    PASS:    { color: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.3)'  },
-    FAIL:    { color: '#ef4444', bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.3)'   },
-    ERROR:   { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)'  },
-    SKIPPED: { color: '#64748b', bg: 'rgba(100,116,139,0.1)',  border: 'rgba(100,116,139,0.25)'},
+    PASS: { color: '#10b981', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)' },
+    FAIL: { color: '#ef4444', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.3)' },
+    ERROR: { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)' },
+    SKIPPED: { color: 'var(--text-muted)', bg: 'rgba(100,116,139,0.1)', border: 'rgba(100,116,139,0.25)' },
     ABORTED: { color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.3)' },
 };
 const DEFAULT_META = { color: '#60a5fa', bg: 'rgba(96,165,250,0.1)', border: 'rgba(96,165,250,0.25)' };
@@ -19,16 +19,16 @@ const formatDuration = (startDate, endDate) => {
         const h = Math.floor(ms / 3600000);
         const m = Math.floor((ms % 3600000) / 60000);
         const s = Math.floor((ms % 60000) / 1000);
-        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     } catch { return '—'; }
 };
 
 export default function TestRunRow({ row }) {
     const result = _.get(row, 'result', 'UNKNOWN');
-    const meta   = RESULT_META[result] || DEFAULT_META;
-    const runId  = _.get(row, 'run_id', '0');
-    const sn     = _.get(row, 'serial_number', '') || '';
-    const op     = _.get(row, 'operator', '') || '';
+    const meta = RESULT_META[result] || DEFAULT_META;
+    const runId = _.get(row, 'run_id', '0');
+    const sn = _.get(row, 'serial_number', '') || '';
+    const op = _.get(row, 'operator', '') || '';
 
     return (
         <TableRow sx={{
@@ -39,24 +39,24 @@ export default function TestRunRow({ row }) {
             {/* Download */}
             <TableCell align="center" sx={{ width: 56 }}>
                 <div className="flex items-center justify-center gap-1">
-                <a
-                    href={`/generate_report/${runId}`}
-                    className="inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors"
-                    style={{ color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}
-                    title="Download HTML report"
-                >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M5 20h14v-2H5zM19 9h-4V3H9v6H5l7 7z"/>
+                    <a
+                        href={`/generate_report/${runId}`}
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors"
+                        style={{ color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}
+                        title="Download HTML report"
+                    >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M5 20h14v-2H5zM19 9h-4V3H9v6H5l7 7z" />
                         </svg>
-                </a>
-                <a
-                    href={`/generate_report_pdf/${runId}`}
-                    className="inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors"
-                    style={{ color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}
-                    title="Download PDF report"
-                >
-                    <span style={{ fontSize: '0.6rem', fontWeight: 700 }}>PDF</span>
-                </a>
+                    </a>
+                    <a
+                        href={`/generate_report_pdf/${runId}`}
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors"
+                        style={{ color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}
+                        title="Download PDF report"
+                    >
+                        <span style={{ fontSize: '0.6rem', fontWeight: 700 }}>PDF</span>
+                    </a>
                 </div>
             </TableCell>
 
@@ -71,7 +71,7 @@ export default function TestRunRow({ row }) {
             {/* DUT */}
             <TableCell>
                 <a href={`/show_report/${runId}`}
-                    style={{ color: '#e2e8f0', fontWeight: 500, fontSize: '0.875rem' }}>
+                    style={{ color: 'var(--text-primary)', fontWeight: 500, fontSize: '0.875rem' }}>
                     {_.get(row, 'dut', '')}
                 </a>
             </TableCell>
@@ -79,28 +79,28 @@ export default function TestRunRow({ row }) {
             {/* Program */}
             <TableCell>
                 <a href={`/show_report/${runId}`}
-                    style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
+                    style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
                     {_.get(row, 'program', '')}
                 </a>
             </TableCell>
 
             {/* Serial Number */}
-            <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: sn ? '#e2e8f0' : '#334155' }}>
+            <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: sn ? 'var(--text-primary)' : 'var(--border)' }}>
                 {sn || '—'}
             </TableCell>
 
             {/* Operator */}
-            <TableCell sx={{ fontSize: '0.8rem', color: op ? '#94a3b8' : '#334155' }}>
+            <TableCell sx={{ fontSize: '0.8rem', color: op ? 'var(--text-secondary)' : 'var(--border)' }}>
                 {op || '—'}
             </TableCell>
 
             {/* Start date */}
-            <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b' }}>
+            <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 {_.get(row, 'start_date', '')}
             </TableCell>
 
             {/* Duration */}
-            <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b' }}>
+            <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 {formatDuration(_.get(row, 'start_date'), _.get(row, 'end_date'))}
             </TableCell>
 

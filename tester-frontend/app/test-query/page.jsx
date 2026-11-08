@@ -28,7 +28,7 @@ const RESULT_META = {
     PASS:    { color: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.3)'  },
     FAIL:    { color: '#ef4444', bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.3)'   },
     ERROR:   { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)'  },
-    SKIPPED: { color: '#64748b', bg: 'rgba(100,116,139,0.1)',  border: 'rgba(100,116,139,0.25)'},
+    SKIPPED: { color: 'var(--text-muted)', bg: 'rgba(100,116,139,0.1)',  border: 'rgba(100,116,139,0.25)'},
     ABORTED: { color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.3)' },
 };
 const DEFAULT_META = { color: '#60a5fa', bg: 'rgba(96,165,250,0.1)', border: 'rgba(96,165,250,0.25)' };
@@ -138,19 +138,19 @@ export default function TestQueryPage() {
 
     return (
         <main className="animate-fade-in p-6">
-            <Backdrop open={loading} sx={{ color: '#fff', zIndex: 9999, backdropFilter: 'blur(4px)', backgroundColor: 'rgba(13,17,23,0.7)' }}>
+            <Backdrop open={loading} sx={{ color: '#fff', zIndex: 9999, backdropFilter: 'blur(4px)', backgroundColor: 'var(--overlay)' }}>
                 <CircularProgress sx={{ color: '#6366f1' }} />
             </Backdrop>
 
             {/* Header */}
             <div className="mb-6">
-                <h1 className="text-2xl font-bold" style={{ color: '#e2e8f0' }}>Tests</h1>
-                <p className="text-sm mt-0.5" style={{ color: '#64748b' }}>Compare results across runs</p>
+                <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Tests</h1>
+                <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>Compare results across runs</p>
             </div>
 
             {/* Filters */}
             <div className="card mb-6">
-                <h2 className="text-sm font-semibold mb-4" style={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                     Filters
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -187,7 +187,7 @@ export default function TestQueryPage() {
                         onClick={clearFilters}
                         disabled={loading}
                         className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
-                        style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: '1px solid #2d3748' }}
+                        style={{ backgroundColor: 'var(--surface-hover)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
                     >
                         Clear
                     </button>
@@ -215,14 +215,14 @@ export default function TestQueryPage() {
             {testResults.length > 0 && (
                 <div className="card">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-sm font-semibold" style={{ color: '#e2e8f0' }}>
+                        <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                             {selectedTests.length > 0 ? selectedTests.join(', ') : 'All Tests'}
                         </h2>
-                        <span className="text-xs font-mono" style={{ color: '#64748b' }}>
+                        <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
                             {testResults.length} result{testResults.length !== 1 ? 's' : ''}
                         </span>
                     </div>
-                    <TableContainer component={Paper} sx={{ borderRadius: '8px', border: '1px solid #2d3748' }}>
+                    <TableContainer component={Paper} sx={{ borderRadius: '8px', border: '1px solid var(--border)' }}>
                         <Table stickyHeader size="small">
                             <TableHead>
                                 <TableRow>
@@ -246,16 +246,16 @@ export default function TestQueryPage() {
                                                 <TableCell sx={{ fontFamily: 'monospace', fontWeight: 700, color: '#818cf8', fontSize: '0.8rem' }}>
                                                     #{r.run_id || '—'}
                                                 </TableCell>
-                                                <TableCell sx={{ fontSize: '0.8rem', color: '#94a3b8' }}>{r.Program || '—'}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{r.Program || '—'}</TableCell>
                                                 <TableCell sx={{ fontSize: '0.85rem', fontWeight: 500 }}>{r.DUT || '—'}</TableCell>
-                                                <TableCell sx={{ fontSize: '0.8rem', color: '#94a3b8' }}>{r.Suite || '—'}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{r.Suite || '—'}</TableCell>
                                                 <TableCell sx={{ fontWeight: 600 }}>{r.Name || '—'}</TableCell>
                                                 <TableCell align="center"><ResultBadge result={r.Result} /></TableCell>
                                                 <TableCell align="center" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 700, color: (RESULT_META[r.Result] || DEFAULT_META).color }}>
                                                     {r.Value || '—'}
                                                 </TableCell>
-                                                <TableCell sx={{ fontSize: '0.75rem', color: '#64748b' }}>{r.Unit || '—'}</TableCell>
-                                                <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b' }}>
+                                                <TableCell sx={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{r.Unit || '—'}</TableCell>
+                                                <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                                                     {r.Time ? new Date(r.Time).toLocaleString() : '—'}
                                                 </TableCell>
                                             </TableRow>
@@ -272,12 +272,12 @@ export default function TestQueryPage() {
             {/* Empty states */}
             {selectedTests.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-16 space-y-2">
-                    <p className="text-sm" style={{ color: '#475569' }}>Select at least one test to query results</p>
+                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Select at least one test to query results</p>
                 </div>
             )}
             {selectedTests.length > 0 && testResults.length === 0 && !loading && (
                 <div className="flex flex-col items-center justify-center py-16 space-y-2">
-                    <p className="text-sm" style={{ color: '#475569' }}>No results match the selected filters</p>
+                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>No results match the selected filters</p>
                 </div>
             )}
         </main>

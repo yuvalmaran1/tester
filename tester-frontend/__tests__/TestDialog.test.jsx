@@ -1,3 +1,4 @@
+import { createTheme, ThemeProvider } from '@mui/material/styles';
 import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -44,6 +45,29 @@ test('renders markdown images from the packaged image map', () => {
         'src',
         'data:image/png;base64,cG5n'
     );
+});
+
+test('uses high-contrast text in dark mode', () => {
+    const darkTheme = createTheme({
+        palette: {
+            mode: 'dark',
+            background: { paper: '#161b2e' },
+            text: { primary: '#f1f5f9', secondary: '#cbd5e1' },
+            divider: '#3d4a5f'
+        }
+    });
+
+    render(
+        <ThemeProvider theme={darkTheme}>
+            <TestDialog
+                data={{ ...base, title: 'Dark dialog', markdown: 'Readable instructions' }}
+                onClose={jest.fn()}
+            />
+        </ThemeProvider>
+    );
+
+    expect(screen.getByText('Dark dialog')).toHaveStyle({ color: '#f1f5f9' });
+    expect(screen.getByTestId('dialog-markdown')).toHaveStyle({ color: '#f1f5f9' });
 });
 
 test('renders all response buttons', () => {
