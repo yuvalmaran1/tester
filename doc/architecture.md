@@ -102,15 +102,17 @@ Wire-up only:
 | `reload` | — | Re-reads `duts.json` |
 | `attr` | `{key: value, ...}` | Updates `run_attr` |
 | `test_execute_state` | `{test_id, execute, type, suite, name}` | Toggles skip state |
-| `dialog_response` | `{rsp}`, `data` | Releases the dialog semaphore |
+| `dialog_response` | `{rsp}`, `data` | Records a response; blocking dialogs close, non-blocking dialogs remain visible |
 
 **HTTP endpoints:**
 
 | Path | Description |
 |---|---|
 | `GET /get_report` | Downloads the HTML report for the latest run |
+| `GET /get_report_pdf` | Downloads the PDF report for the latest run |
 | `GET /get_runs` | JSON list of all runs (for the Runs page) |
 | `GET /generate_report/<id>` | Downloads the HTML report for run `<id>` |
+| `GET /generate_report_pdf/<id>` | Downloads the PDF report for run `<id>` |
 | `GET /show_report/<id>` | Shows the HTML report for run `<id>` in the browser |
 | `GET /get_available_tests` | Unique test names from the database |
 | `GET /get_available_programs` | Unique program names from the database |

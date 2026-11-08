@@ -16,6 +16,8 @@ class TesterConfig:
     station_config_class: Optional[Type] = field(default=None)
     debug_reload: bool = field(default=False)
     require_login: bool = field(default=True)
+    ssl_cert_file: Optional[str] = field(default=None)
+    ssl_key_file: Optional[str] = field(default=None)
 
     # Backward compatibility property
     @property

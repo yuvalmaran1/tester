@@ -4,7 +4,7 @@ import copy
 import pyjson5 as json
 import os
 import ctypes
-from threading import Thread
+from threading import RLock, Thread
 from datetime import datetime, timedelta
 from abc import ABC, abstractmethod, ABCMeta
 from .TestDB import TestDB
@@ -25,6 +25,7 @@ from .Operator import hash_password, verify_password
 class Tester(RunExecutorMixin, StateManagerMixin, ABC):
     __metaclass__ = ABCMeta
     DEFAULT_REPORT_PATH = './report.html'
+    ADMIN_DEFAULT_SERIAL_NUMBER = '0000'
 
     def __init__(self, config: TesterConfig) -> None:
         super().__init__()
@@ -60,6 +61,7 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         self.serial_number = ''
         self.run_thread = None
         self.current_operator = None  # dict with id/username/display_name/role or None
+        self._reload_lock = RLock()
 
         # Seed admin and resolve initial operator
         self._seed_admin()
@@ -70,7 +72,10 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
                 self.current_operator = {k: v for k, v in self.current_operator.items() if k != 'password_hash'}
 
         # interface
-        self.interface = TesterIf()
+        self.interface = TesterIf(
+            ssl_cert_file=config.ssl_cert_file,
+            ssl_key_file=config.ssl_key_file,
+        )
         self.interface.connect_handler = self._client_connected_handler
         self.interface.disconnect_handler = self._client_disconnected_handler
         self.interface.set_dut_handler = self._set_dut_handler
@@ -79,6 +84,7 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         self.interface.stop_run_handler = self._stop_run_handler
         self.interface.get_dut_image_handler = self._get_dut_image_handler
         self.interface.get_report_handler = self._get_report_handler
+        self.interface.get_pdf_report_handler = self._get_pdf_report_handler
         self.interface.get_runs_handler = self._get_runs_handler
         self.interface.get_available_tests_handler = self._get_available_tests_handler
         self.interface.get_available_programs_handler = self._get_available_programs_handler
@@ -148,8 +154,7 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
             # Program-level attributes should override existing ones (including DUT defaults)
             # Keep the rest of the attribute hierarchy unchanged
             self.run_attr = self.active_dut.attr | self.active_program.attr
-            # Pre-fill serial number with the program's default (operator can still override)
-            self.serial_number = self.active_program.default_serial_number
+            self._set_program_serial_default()
             self._update_tester(emit=False)
         self._create_run()
         self._reset_stats(total=len(self.test_run.test_results))
@@ -172,14 +177,20 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         pass
 
     def _set_dut_handler(self, data):
+        if not self._is_authenticated() or self.running:
+            return
         if data.get('dut', None):
             self.select_dut(data.get('dut'))
 
     def _set_program_handler(self, data):
+        if not self._is_authenticated() or self.running:
+            return
         if data.get('program', None):
             self.select_program(data.get('program'))
 
     def _start_run_handler(self):
+        if not self._is_authenticated():
+            return
         self.run()
 
     def _stop_run_handler(self):
@@ -204,6 +215,18 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         except ValueError:
             return ('','')
 
+    def _get_pdf_report_handler(self, id=0):
+        try:
+            id = int(id)
+            if id == 0:
+                id = self.db.get_latest_run_id()
+
+            run = self.db.get_run(id)
+            report_name = f'report_{run.dut}_{run.program}_{run.start_date.strftime("%Y_%m_%d_%H_%M_%S")}'.replace(' ','_')
+            return (TestReport(run).generate_pdf(), report_name)
+        except ValueError:
+            return (b'', '')
+
     def _get_runs_handler(self):
         return self.db.get_runs()
 
@@ -223,38 +246,57 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         return self.state
 
     def _reload_handler(self):
-        if self.config.require_login and (not self.current_operator or self.current_operator.get('role') != 'admin'):
-            return
-        dut_name = self.active_dut.name if self.active_dut else next(iter(self.duts)).name
-        program_name = self.active_program.name if self.active_program else None
-        self.duts = self.populate_duts(json.load(open(self.config.duts_file,'r')))
-        with open(self.config.duts_file, 'rb') as _f:
-            self.config_hash = hashlib.sha256(_f.read()).hexdigest()
-        self.active_dut: Dut = None
-        self.dut_setup: TestCase = None
-        self.dut_cleanup: TestCase = None
-        self.active_program: TestProgram = None
-        self.test_run = None
-        self.select_dut(dut_name)
-        self.select_program(program_name)
-        self._generate_state()
-        self.interface.emit_event(TesterRequest.State.value, self.state)
+        with self._reload_lock:
+            if self.running or not self._is_admin():
+                return
+            dut_name = self.active_dut.name if self.active_dut else None
+            program_name = self.active_program.name if self.active_program else None
+            with open(self.config.duts_file, 'r') as config_file:
+                new_duts = self.populate_duts(json.load(config_file))
+            if not new_duts:
+                raise ValueError("DUT configuration must contain at least one DUT")
+            with open(self.config.duts_file, 'rb') as config_file:
+                config_hash = hashlib.sha256(config_file.read()).hexdigest()
+            selected_dut = next((dut for dut in new_duts if dut.name == dut_name), new_duts[0])
+            if dut_name and selected_dut.name != dut_name:
+                self.logger.warning(
+                    f"Previously selected DUT '{dut_name}' is no longer configured; "
+                    f"selected '{selected_dut.name}'"
+                )
+            self.duts = new_duts
+            self.config_hash = config_hash
+            self.active_dut: Dut = None
+            self.dut_setup: TestCase = None
+            self.dut_cleanup: TestCase = None
+            self.active_program: TestProgram = None
+            self.test_run = None
+            self.select_dut(selected_dut.name)
+            self.select_program(program_name)
+            self._generate_state()
+            self.interface.emit_event(TesterRequest.State.value, self.state)
 
     def _attr_handler(self,attr):
+        if not self._is_authenticated() or self.running:
+            return
         # sync only if this makes a difference (to avoid endless update loop)
         if self.run_attr | attr != self.run_attr:
             self.run_attr |= attr
             self._update_program()
 
     def _set_serial_handler(self, data):
+        if not self._is_authenticated() or self.running:
+            return
         self.serial_number = (data or {}).get('serial_number', '')
         self._update_tester()
 
     def _dialog_response_handler(self, rsp, data):
-        self.dialog.close(rsp, data)
+        if self._is_authenticated():
+            self.dialog.submit_response(rsp, data)
 
     def _test_execute_state_handler(self, data):
         """Handle test execution state changes from frontend"""
+        if not self._is_authenticated() or self.running:
+            return
         test_id = data.get('test_id')
         execute = data.get('execute', True)
         test_type = data.get('type', 'testcase')
@@ -293,6 +335,8 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         self.interface.emit_event(TesterRequest.TestExecuteState.value, data)
 
     def _request_handler(self, req):
+        if not self._is_authenticated():
+            return {"code": 401, "data": "Authentication required"}
         cmd = req.get('cmd', None)
 
         if cmd == 'run':
@@ -326,6 +370,24 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
 
     # ── Operator / authentication helpers ────────────────────────────────────
 
+    def _is_authenticated(self):
+        return not self.config.require_login or self.current_operator is not None
+
+    def _is_admin(self):
+        return self._is_authenticated() and (
+            not self.config.require_login or self.current_operator.get('role') == 'admin'
+        )
+
+    def _set_program_serial_default(self):
+        self.serial_number = self.active_program.default_serial_number
+        if (
+            not self.serial_number
+            and self.active_program.sn_generator is None
+            and self.current_operator
+            and self.current_operator.get('role') == 'admin'
+        ):
+            self.serial_number = self.ADMIN_DEFAULT_SERIAL_NUMBER
+
     def _seed_admin(self):
         """Create default admin account if no operators exist."""
         if not self.db.list_operators():
@@ -343,6 +405,8 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         op = self.db.get_operator_by_username(username)
         if op and op.get('active') and verify_password(password, op.get('password_hash', '')):
             self.current_operator = {k: v for k, v in op.items() if k != 'password_hash'}
+            if self.active_program and not self.serial_number:
+                self._set_program_serial_default()
             self._update_tester()
             self.interface.emit_event(TesterRequest.LoginResult.value, {'success': True, 'operator': self.current_operator})
             self.logger.info(f"Operator '{username}' logged in")
@@ -353,6 +417,12 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         if self.current_operator:
             self.logger.info(f"Operator '{self.current_operator['username']}' logged out")
         self.current_operator = None
+        if (
+            self.active_program
+            and not self.active_program.default_serial_number
+            and self.serial_number == self.ADMIN_DEFAULT_SERIAL_NUMBER
+        ):
+            self.serial_number = ''
         self._update_tester()
 
     def _list_operators_handler(self):

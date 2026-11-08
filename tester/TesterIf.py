@@ -61,7 +61,9 @@ class TesterRequest(Enum):
     SerialNumber = "serial_number"
 
 class TesterIf:
-    def __init__(self) -> None:
+    def __init__(self, ssl_cert_file=None, ssl_key_file=None) -> None:
+        self.ssl_cert_file = ssl_cert_file
+        self.ssl_key_file = ssl_key_file
         self.app = Flask('tester',template_folder=FRONTEND_TEMPLATE_PATH, static_folder=FRONTEND_STATIC_PATH)
         self.app.config['EXPLAIN_TEMPLATE_LOADING'] = True
 
@@ -74,6 +76,7 @@ class TesterIf:
         self.set_program_handler = None
         self.get_dut_image_handler = None
         self.get_report_handler = None
+        self.get_pdf_report_handler = None
         self.get_runs_handler = None
         self.get_state_handler = None
         self.reload_handler = None
@@ -118,7 +121,18 @@ class TesterIf:
         TestLogger().addHandler(log_handler)
 
     def run(self):
-        self.sio.run(self.app, host='0.0.0.0', port=5050, use_reloader=False, allow_unsafe_werkzeug=True)
+        if bool(self.ssl_cert_file) != bool(self.ssl_key_file):
+            raise ValueError("ssl_cert_file and ssl_key_file must be configured together")
+
+        run_options = {
+            'host': '0.0.0.0',
+            'port': 5050,
+            'use_reloader': False,
+            'allow_unsafe_werkzeug': True,
+        }
+        if self.ssl_cert_file:
+            run_options['ssl_context'] = (self.ssl_cert_file, self.ssl_key_file)
+        self.sio.run(self.app, **run_options)
 
     def _add_endpoints(self):
         self._add_endpoint(endpoint='/', endpoint_name='/', handler=self.index_handler)
@@ -130,8 +144,10 @@ class TesterIf:
         self._add_endpoint(endpoint='/<path:path>', endpoint_name='/<path:path>', handler=self.file_handler)
         self._add_endpoint(endpoint='/dut_image', endpoint_name='/dut_image', handler=self._get_dut_image_handler)
         self._add_endpoint(endpoint='/get_report', endpoint_name='/get_report', handler=self._get_report_handler)
+        self._add_endpoint(endpoint='/get_report_pdf', endpoint_name='/get_report_pdf', handler=self._get_pdf_report_handler)
         self._add_endpoint(endpoint='/get_runs', endpoint_name='/get_runs', handler=self._get_runs_handler)
         self._add_endpoint(endpoint='/generate_report/<id>', endpoint_name='/generate_report/<id>', handler=self._generate_report_handler)
+        self._add_endpoint(endpoint='/generate_report_pdf/<id>', endpoint_name='/generate_report_pdf/<id>', handler=self._generate_pdf_report_handler)
         self._add_endpoint(endpoint='/show_report/<id>', endpoint_name='/show_report/<id>', handler=self._show_report_handler)
         self._add_endpoint(endpoint='/get_available_tests', endpoint_name='/get_available_tests', handler=self._get_available_tests_handler)
         self._add_endpoint(endpoint='/get_available_programs', endpoint_name='/get_available_programs', handler=self._get_available_programs_handler)
@@ -177,6 +193,14 @@ class TesterIf:
                             headers={"Content-disposition":
                                 f"attachment; filename={report_name}.html"})
 
+    def _get_pdf_report_handler(self):
+        if self.get_pdf_report_handler:
+            report_bytes, report_name = self.get_pdf_report_handler()
+            return Response(report_bytes,
+                            mimetype="application/pdf",
+                            headers={"Content-disposition":
+                                f"attachment; filename={report_name}.pdf"})
+
     def _get_runs_handler(self):
         if self.get_runs_handler:
             runs = self.get_runs_handler()
@@ -189,6 +213,14 @@ class TesterIf:
                             mimetype="text/html",
                             headers={"Content-disposition":
                                 f"attachment; filename={report_name}.html"})
+
+    def _generate_pdf_report_handler(self, id):
+        if self.get_pdf_report_handler:
+            report_bytes, report_name = self.get_pdf_report_handler(id)
+            return Response(report_bytes,
+                            mimetype="application/pdf",
+                            headers={"Content-disposition":
+                                f"attachment; filename={report_name}.pdf"})
 
     def _show_report_handler(self, id):
         if self.get_report_handler:

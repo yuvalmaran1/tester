@@ -4,8 +4,11 @@ All tests use the make_tester factory fixture from conftest.py which wires
 fast, headless tester instances to temporary file paths.
 """
 import threading
+import json
 import pytest
+from tester.TestCase import TestCase
 from tester.TestResult import TestResult
+from tester.Operator import hash_password
 
 from conftest import (
     DUTS_STANDARD, DUTS_DUT_SETUP_FAIL, DUTS_SLOW, DUTS_ATTR_READ,
@@ -105,6 +108,35 @@ def test_run_status_resets_to_idle(make_tester):
     _run_and_wait(t)
     assert t.status_str == "Idle"
     assert t.active_test == -1
+
+
+def test_user_overridden_execute_cannot_escape_run(make_tester, monkeypatch):
+    t = make_tester()
+
+    def unprotected_execute(self, run_data):
+        raise RuntimeError("escaped user procedure")
+
+    monkeypatch.setattr(TestCase, "execute", unprotected_execute)
+    _run_and_wait(t)
+
+    assert not t.running
+    assert t.status_str == "Idle"
+    assert t.test_run.result == E.ERROR
+    assert sum(result.result == E.ERROR for result in t.test_run.test_results) == 2
+    assert all(result.result in {E.ERROR, E.SKIPPED} for result in t.test_run.test_results)
+
+
+def test_run_thread_failure_restores_idle_state(make_tester, monkeypatch):
+    t = make_tester()
+    monkeypatch.setattr(t, "_execute_testsuite", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")))
+
+    _run_and_wait(t)
+
+    assert not t.running
+    assert t.status_str == "Idle"
+    assert t.active_test == -1
+    assert t.run_data is None
+    assert t.test_run.result == E.ERROR
 
 
 # ── Statistics tracking ───────────────────────────────────────────────────────
@@ -361,6 +393,64 @@ def test_reload_handler_preserves_program_selection(make_tester):
     assert t.active_program.name == original_prog
 
 
+def test_reload_handler_selects_first_dut_when_previous_dut_was_removed(make_tester):
+    t = make_tester()
+    replacement = {
+        **DUTS_STANDARD,
+        "duts": [{**DUTS_STANDARD["duts"][0], "name": "Replacement DUT"}],
+    }
+    with open(t.config.duts_file, "w", encoding="utf-8") as config_file:
+        json.dump(replacement, config_file)
+
+    t._reload_handler()
+
+    assert t.active_dut.name == "Replacement DUT"
+
+
+def test_reload_handler_rejects_empty_dut_configuration_without_losing_selection(make_tester):
+    t = make_tester()
+    original_dut = t.active_dut
+    with open(t.config.duts_file, "w", encoding="utf-8") as config_file:
+        json.dump({"duts": []}, config_file)
+
+    with pytest.raises(ValueError, match="at least one DUT"):
+        t._reload_handler()
+
+    assert t.active_dut is original_dut
+
+
+def test_reload_handler_is_blocked_while_running(make_tester, monkeypatch):
+    t = make_tester()
+    t.running = True
+    monkeypatch.setattr(t, "populate_duts", lambda *_: pytest.fail("reload must be blocked"))
+
+    try:
+        t._reload_handler()
+    finally:
+        t.running = False
+
+
+def test_mutating_handlers_require_login(make_tester):
+    t = make_tester(require_login=True)
+    assert t.current_operator is None
+
+    t._set_serial_handler({"serial_number": "UNAUTHORIZED"})
+    t._attr_handler({"unauthorized": True})
+    t._start_run_handler()
+
+    assert t.serial_number == "TEST-SN"
+    assert "unauthorized" not in t.run_attr
+    assert not t.running
+
+
+def test_request_api_requires_login(make_tester):
+    t = make_tester(require_login=True)
+
+    response = t._request_handler({"cmd": "run", "dut": "Test DUT", "program": "Test Program"})
+
+    assert response == {"code": 401, "data": "Authentication required"}
+
+
 # ── run_data ──────────────────────────────────────────────────────────────────
 
 def test_run_data_flows_between_test_cases(make_tester):
@@ -411,6 +501,79 @@ def test_serial_number_default_from_program(make_tester):
     assert t.serial_number == 'TEST-SN'
 
 
+def test_admin_gets_development_serial_default(make_tester):
+    duts = {
+        **DUTS_STANDARD,
+        "duts": [{
+            **DUTS_STANDARD["duts"][0],
+            "programs": [{
+                **DUTS_STANDARD["duts"][0]["programs"][0],
+                "default_serial_number": "",
+            }],
+        }],
+    }
+
+    t = make_tester(duts, require_login=False)
+
+    assert t.current_operator["role"] == "admin"
+    assert t.serial_number == "0000"
+
+
+def test_logged_out_operator_does_not_get_development_serial_default(make_tester):
+    duts = {
+        **DUTS_STANDARD,
+        "duts": [{
+            **DUTS_STANDARD["duts"][0],
+            "programs": [{
+                **DUTS_STANDARD["duts"][0]["programs"][0],
+                "default_serial_number": "",
+            }],
+        }],
+    }
+
+    t = make_tester(duts, require_login=True)
+
+    assert t.current_operator is None
+    assert t.serial_number == ""
+
+
+def test_admin_login_sets_development_serial_default(make_tester):
+    duts = {
+        **DUTS_STANDARD,
+        "duts": [{
+            **DUTS_STANDARD["duts"][0],
+            "programs": [{
+                **DUTS_STANDARD["duts"][0]["programs"][0],
+                "default_serial_number": "",
+            }],
+        }],
+    }
+    t = make_tester(duts, require_login=True)
+
+    t._login_handler({"username": "admin", "password": "admin"})
+
+    assert t.serial_number == "0000"
+
+
+def test_operator_login_does_not_set_development_serial_default(make_tester):
+    duts = {
+        **DUTS_STANDARD,
+        "duts": [{
+            **DUTS_STANDARD["duts"][0],
+            "programs": [{
+                **DUTS_STANDARD["duts"][0]["programs"][0],
+                "default_serial_number": "",
+            }],
+        }],
+    }
+    t = make_tester(duts, require_login=True)
+    t.db.add_operator("operator", "Operator", hash_password("password"), "operator")
+
+    t._login_handler({"username": "operator", "password": "password"})
+
+    assert t.serial_number == ""
+
+
 def test_run_stores_serial_number(make_tester):
     """Serial number set before run is persisted in DB."""
     t = make_tester()
@@ -429,6 +592,17 @@ def test_run_stores_config_hash(make_tester):
     run = t.db.get_run(t.db.get_latest_run_id())
     assert run.config_hash == t.config_hash
     assert len(run.config_hash) == 64
+
+
+def test_latest_run_pdf_endpoint(make_tester):
+    t = make_tester()
+    _run_and_wait(t)
+
+    response = t.interface.app.test_client().get("/get_report_pdf")
+
+    assert response.status_code == 200
+    assert response.mimetype == "application/pdf"
+    assert response.data.startswith(b"%PDF-")
 
 
 def test_run_raises_when_serial_number_empty(make_tester):

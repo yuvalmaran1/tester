@@ -1,6 +1,24 @@
 # User Interface
 
-The web UI is served by the Flask backend on `http://localhost:5050`. It has three pages reachable via the top navigation bar.
+The web UI is served by the Flask backend on port 5050. It has three pages reachable via the top navigation bar.
+
+## HTTPS
+
+Report links are relative to the current UI address. If the UI is opened over plain HTTP, PDF downloads are also transferred over HTTP and browsers may warn that the file was loaded over an insecure connection. A link change cannot secure that transfer; the server itself must use TLS.
+
+For direct TLS, configure a certificate and its private key together:
+
+```python
+cfg = TesterConfig(
+	# ...
+	ssl_cert_file="./certificates/station.crt",
+	ssl_key_file="./certificates/station.key",
+)
+```
+
+Then open `https://<station-address>:5050`. The certificate must be trusted by the client and include the station hostname or IP address in its Subject Alternative Name. Configuring only one of the two files raises an error at startup.
+
+For production stations, terminating TLS at a managed reverse proxy such as nginx or IIS is recommended. The proxy serves HTTPS to browsers and forwards HTTP/WebSocket traffic to `http://127.0.0.1:5050`; in that setup, leave the two application TLS settings unset.
 
 ---
 
@@ -12,7 +30,9 @@ The main operator screen. Used to configure and run tests, and monitor live resu
 
 At the top of the page:
 
-**DUT and Program selectors** — Drop-downs to choose which device type to test and which test program to run. Both are disabled while a run is in progress.
+**DUT image and selectors** — The active DUT image is shown beside drop-downs for choosing the device type and test program. The framework placeholder is used when the DUT has no image. Both selectors are disabled while a run is in progress.
+
+**Unit Serial Number** — Programs without a serial-number generator accept a scanned or manually entered serial number. When an administrator is logged in and the program has no configured default, the field uses `0000` as a development placeholder. Operators must still enter the real unit serial number.
 
 **Run / Stop button** — Starts the selected program. Turns into a Stop button while running; clicking Stop injects a graceful abort that marks the current test as ABORTED and skips the rest.
 
@@ -22,7 +42,7 @@ At the top of the page:
 
 **Statistics row** — Live counters for Done/Total, Pass, Fail, Error, Skipped, Aborted, with a progress bar and elapsed time. The status text below the bar shows the name of the currently executing test case.
 
-**Program Attributes panel** (collapsible) — If the selected program defines an `attr_schema`, a form appears here. The operator can change attribute values (e.g. firmware version, test mode flags) before pressing Run. Changes take effect on the next run. The panel is read-only while a run is in progress.
+**Program Attributes panel** (collapsible) — If the selected program defines an `attr_schema`, its form is expanded automatically. The operator can collapse it or change attribute values (e.g. firmware version, test mode flags) before pressing Run. Changes take effect on the next run. The panel is read-only while a run is in progress.
 
 ### Results table
 
@@ -47,7 +67,7 @@ The floating button (bottom right) opens the log modal. It shows the live framew
 
 ### Test Dialog
 
-If a test case calls `self.dialog.display(...)`, a modal appears on top of the dashboard. The operator must respond before the test can continue. The dialog can contain instructional text, a dynamic form (JSON Schema rendered by JSONForms), a countdown progress bar, and configurable buttons (Ok, Cancel, Yes, No). Closing the browser tab or losing connectivity does not close the dialog — it times out automatically.
+If a test case calls `self.dialog.display(...)`, a modal appears and blocks the test until the operator responds. `display_non_blocking(...)` opens the same dialog without blocking; submitted responses leave it visible so the test can update its instructions, controls, and progress before calling `close()`. Both modes support JSON Schema forms and configurable buttons.
 
 ### Offline overlay
 
@@ -71,9 +91,10 @@ A historical view of all recorded test runs, sorted newest first.
 | **Duration** | Total run time (HH:MM:SS). |
 | **Result** | Colour-coded badge for the overall run outcome. |
 
-Each row has two icon buttons:
+Each row provides report actions:
 - **View Report** — Opens the HTML report for that run in a new browser tab.
-- **Download Report** — Downloads the HTML report as a self-contained file.
+- **Download HTML** — Downloads the interactive report as a self-contained file.
+- **Download PDF** — Downloads the printable PDF report.
 
 Click **Refresh** (top right) to reload the list.
 

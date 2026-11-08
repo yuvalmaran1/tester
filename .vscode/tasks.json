@@ -98,7 +98,7 @@
             "type": "shell",
             "command": "python",
             "args": [
-                "example_tester/example_tester.py"
+                "example_tester.py"
             ],
             "group": "build",
             "presentation": {

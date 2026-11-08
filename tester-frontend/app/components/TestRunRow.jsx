@@ -38,16 +38,26 @@ export default function TestRunRow({ row }) {
         }}>
             {/* Download */}
             <TableCell align="center" sx={{ width: 56 }}>
+                <div className="flex items-center justify-center gap-1">
                 <a
                     href={`/generate_report/${runId}`}
                     className="inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors"
                     style={{ color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}
-                    title="Download report"
+                    title="Download HTML report"
                 >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M5 20h14v-2H5zM19 9h-4V3H9v6H5l7 7z"/>
                         </svg>
                 </a>
+                <a
+                    href={`/generate_report_pdf/${runId}`}
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors"
+                    style={{ color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}
+                    title="Download PDF report"
+                >
+                    <span style={{ fontSize: '0.6rem', fontWeight: 700 }}>PDF</span>
+                </a>
+                </div>
             </TableCell>
 
             {/* Run ID */}

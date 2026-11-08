@@ -201,7 +201,9 @@ class PostgreSQLDatabase(DatabaseInterface):
                 for r in results:
                     result_dicts.append({result_keys[i]: r[i] for i in range(len(result_keys))})
 
-                return TestRun.from_dict(run_dict, result_dicts)
+                test_run = TestRun.from_dict(run_dict, result_dicts)
+                test_run.run_id = run_id
+                return test_run
         finally:
             self._return_connection(conn)
 
@@ -266,7 +268,7 @@ class PostgreSQLDatabase(DatabaseInterface):
             with conn.cursor() as cursor:
                 # Build the query - join results with runs to get DUT and program info
                 query = f'''
-                    SELECT res.run_id, res.date, res.suite, res.name, res.tolerance, res.value, res.unit, res.result, res.comment, res.infoonly, res.skip, res.attr, res.result_type, r.dut, r.program
+                    SELECT res.run_id, res.date, res.suite, res.name, res.tolerance, res.value, res.unit, res.result, res.comment, res.infoonly, res.skip, res.attr, res.result_type, res.role, r.dut, r.program
                     FROM {self.RESULT_TABLE} res
                     JOIN {self.RUNS_TABLE} r ON res.run_id = r.run_id
                     WHERE 1=1

@@ -14,7 +14,13 @@ This module demonstrates two advanced framework features:
 2. **TestDialog** — AssignSerialNumberTest suspends the run and prompts the
    operator to enter a serial number via the UI.  The run continues only after
    the operator clicks OK (or the 60-second timeout fires).
+
+3. **Non-blocking TestDialog** — InteractiveProgrammingTest keeps the dialog
+    visible after the operator responds, then updates its message and progress
+    while simulated programming work continues.
 """
+import time
+
 from tester.TestConfig import TestConfig
 from tester.TestResult import TestResult
 from tester.TestResults.PassFailTestResult import PassFailTestCase
@@ -131,6 +137,36 @@ class AssignSerialNumberTest(PassFailTestCase):
         run_data["serial_number"] = sn      # pass to VerifySerialNumberTest
         TestLogger().info(f"Serial number programmed: {sn}")
         self.set_comment(f"Programmed serial number: {sn}")
+        return TestResult.TestEval.PASS
+
+
+class InteractiveProgrammingTest(PassFailTestCase):
+    """Demonstrate a multi-stage, non-blocking operator interaction."""
+    def _execute(self, config: TestConfig, assets, run_data: dict) -> TestResult.TestEval:
+        dialog = TestDialog().display_non_blocking(
+            title="Prepare Device Programming",
+            text="Put the DUT into programming mode, then press Ok.",
+            responses=[TestDialog.Response.Ok, TestDialog.Response.Cancel],
+        )
+
+        response = dialog.wait_for_response(timeout=60)
+        if (response or {}).get("rsp") != TestDialog.Response.Ok.name:
+            dialog.close()
+            raise AbortRunException("Operator cancelled interactive programming")
+
+        dialog.update(
+            text="Programming in progress. Keep the fixture connected.",
+            responses=[],
+            progress=0,
+        )
+        for progress in range(10, 101, 10):
+            time.sleep(0.15)
+            dialog.update(progress=progress)
+
+        dialog.update(text="Programming complete.", progress=100)
+        time.sleep(0.5)
+        dialog.close()
+        self.set_comment("Completed interactive programming workflow")
         return TestResult.TestEval.PASS
 
 

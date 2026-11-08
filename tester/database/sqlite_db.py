@@ -152,7 +152,9 @@ class SQLiteDatabase(DatabaseInterface):
             for r in results:
                 result_dicts.append({result_keys[i]: r[i] for i in range(len(result_keys))})
 
-            return TestRun.from_dict(run_dict, result_dicts)
+            test_run = TestRun.from_dict(run_dict, result_dicts)
+            test_run.run_id = run_id
+            return test_run
 
     def get_runs(self) -> str:
         """Get all test runs as JSON string."""

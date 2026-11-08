@@ -20,6 +20,7 @@ import {
     TableRow,
 } from '@mui/material';
 import _ from 'lodash';
+import Image from 'next/image';
 import Link from 'next/link';
 import * as React from 'react';
 import LogModal from './components/LogModal';
@@ -50,12 +51,12 @@ export default function Home() {
     const [testCases, setTestCases] = React.useState([]);
     const [showLog, setShowLog] = React.useState(false);
     const [log, setLog] = React.useState([]);
-    const [showAttr, setShowAttr] = React.useState(false);
+    const [showAttr, setShowAttr] = React.useState(true);
     const [operator, setOperator] = React.useState(undefined); // undefined = not yet received
     const [serialNumber, setSerialNumber] = React.useState('');
 
     React.useEffect(() => calcProgress(tester), [tester]);
-    React.useEffect(() => getState(), []);
+    React.useEffect(() => { socket.emit('get_state'); }, []);
 
     React.useEffect(() => {
         const handleTester = (data) => { setTester(data); setOperator(data?.operator ?? null); setSerialNumber(data?.serial_number ?? ''); };
@@ -63,6 +64,7 @@ export default function Home() {
         const handleActiveProgram = (data) => {
             setActiveProgram(data);
             setTestCases(_.get(data, 'test_cases', []));
+            setShowAttr(Object.keys(_.get(data, 'attr_schema.properties', {})).length > 0);
         };
         const handleTestExecuteState = (data) => {
             setTestCases(prev => prev.map(tc =>
@@ -84,6 +86,7 @@ export default function Home() {
             setPrograms(_.get(data, 'programs', []));
             setActiveDut(_.get(data, 'dut', {}));
             setActiveProgram(_.get(data, 'program', {}));
+            setShowAttr(Object.keys(_.get(data, 'program.attr_schema.properties', {})).length > 0);
             setTestCases(_.get(data, 'program.test_cases', []));
             setLog(_.get(data, 'log', []));
             setRun(_.get(data, 'run', {}));
@@ -138,7 +141,6 @@ export default function Home() {
         setCanReport(done === total && total !== 0);
     };
 
-    const getState = () => socket.emit('get_state');
     const reload   = () => socket.emit('reload');
     const setAttributes = (attr) => socket.emit('attr', attr);
     const handleDialogClose = (response, responseData) =>
@@ -233,19 +235,46 @@ export default function Home() {
                             </div>
 
                             {canReport && (
+                                <>
                                 <a
                                     href="/get_report"
                                     className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
                                     style={{ backgroundColor: 'rgba(16,185,129,0.12)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)' }}
                                 >
-                                    ↓ Report
+                                    ↓ HTML
                                 </a>
+                                <a
+                                    href="/get_report_pdf"
+                                    className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
+                                    style={{ backgroundColor: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}
+                                >
+                                    ↓ PDF
+                                </a>
+                                </>
                             )}
                         </div>
                     </div>
 
                     {/* Row 2: DUT + Program selects */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-end gap-3">
+                        {_.get(activeDut, 'name') && (
+                            <div className="shrink-0">
+                                <label className="block text-xs font-medium mb-1" style={{ color: '#64748b' }}>
+                                    DUT
+                                </label>
+                                <div style={{ width: 72, height: 40, border: '1px solid #2d3748', borderRadius: 6, backgroundColor: '#161b2e', overflow: 'hidden' }}>
+                                    <Image
+                                        src={`/dut_image?dut=${encodeURIComponent(_.get(activeDut, 'name', ''))}`}
+                                        alt={_.get(activeDut, 'name', 'Device under test')}
+                                        width={72}
+                                        height={40}
+                                        unoptimized
+                                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                        <div className="grid grid-cols-2 gap-3 flex-1 min-w-0">
                         <div>
                             <label className="block text-xs font-medium mb-1" style={{ color: '#64748b' }}>
                                 Device Under Test
@@ -285,6 +314,7 @@ export default function Home() {
                                     ))}
                                 </Select>
                             </FormControl>
+                        </div>
                         </div>
                     </div>
 

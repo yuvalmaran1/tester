@@ -240,6 +240,11 @@
                             "test": "AssignSerialNumberTest"
                         },
                         {
+                            "name": "Interactive Programming",
+                            "module": "tests.programming_tests",
+                            "test": "InteractiveProgrammingTest"
+                        },
+                        {
                             "name": "Verify Serial Number",
                             "module": "tests.programming_tests",
                             "test": "VerifySerialNumberTest"

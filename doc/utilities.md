@@ -6,7 +6,7 @@ These helpers are available inside `_execute()` on any test case, or anywhere yo
 
 ## Dialogs
 
-`TestDialog` is a singleton that displays a modal dialog in the web UI and **blocks the test thread** until the operator responds (or it times out).
+`TestDialog` is a singleton that displays a modal dialog in the web UI. It supports both blocking prompts and non-blocking, multi-stage workflows.
 
 ### Basic usage
 
@@ -22,7 +22,7 @@ class InspectBoardTest(PassFailTestCase):
             responses=[TestDialog.Response.Yes, TestDialog.Response.No],
             timeout=60,
         )
-        if response == TestDialog.Response.Yes.name:
+        if (response or {}).get("rsp") == TestDialog.Response.Yes.name:
             return TestResult.TestEval.PASS
         return TestResult.TestEval.FAIL
 ```
@@ -52,9 +52,77 @@ response = self.dialog.display(
 )
 ```
 
-The return value is the button name (a string: `"Ok"`, `"Cancel"`, `"Yes"`, `"No"`).
+The return value is a response object such as `{"rsp": "Ok"}`. The submitted form values are available through `self.dialog.response_data`.
 
-To access the form data, use `self.dialog.response_data` after `display()` returns.
+### With Markdown and images
+
+Pass a UTF-8 `.md` file to display headings, lists, links, code, tables, and other Markdown formatting. Relative local images referenced by the file are included automatically:
+
+```markdown
+# Connect the fixture
+
+1. Connect the **red cable** to J4.
+2. Confirm that the status LED is green.
+
+![Correct wiring](images/fixture-wiring.png)
+```
+
+```python
+response = self.dialog.display(
+    title="Fixture setup",
+    markdown_file="operator-instructions/connect-fixture.md",
+    responses=[TestDialog.Response.Ok, TestDialog.Response.Cancel],
+)
+```
+
+Image paths are resolved relative to the Markdown file. Remote image URLs also work. Plain `text` and `markdown_file` can be used together; the plain text appears first.
+
+### Non-blocking workflow
+
+`display_non_blocking()` returns immediately. Operator responses are recorded without hiding the dialog, allowing a test to change the instructions, remove buttons, and report operation progress before explicitly closing it.
+
+```python
+dialog = self.dialog.display_non_blocking(
+    title="Manual connection",
+    text="Connect the fixture, then press Done.",
+    responses=[TestDialog.Response.Ok, TestDialog.Response.Cancel],
+)
+
+# The test can continue polling hardware while the dialog remains interactive.
+while True:
+    response = dialog.wait_for_response(timeout=0.1)
+    if response is not None:
+        break
+    assets["fixture"].poll()
+
+if response.get("rsp") == TestDialog.Response.Cancel.name:
+    dialog.close()
+    return TestResult.TestEval.FAIL
+
+dialog.update(text="Programming device...", responses=[], progress=0)
+for progress in assets["programmer"].program_with_progress():
+    dialog.update(progress=progress)
+
+dialog.update(text="Programming complete", progress=100)
+dialog.close()
+return TestResult.TestEval.PASS
+```
+
+The non-blocking methods are:
+
+| Method | Description |
+|---|---|
+| `display_non_blocking(...)` | Opens the dialog and returns the `TestDialog` immediately |
+| `wait_for_response(timeout=None, clear=True)` | Optionally waits for the next response without hiding the dialog |
+| `update(...)` | Changes title, text, Markdown file, schema, defaults, buttons, or progress in place |
+| `close()` | Explicitly hides the dialog |
+
+`response` and `response_data` always contain the most recently submitted values.
+
+See `InteractiveProgrammingTest` in
+`example_tester/tests/programming_tests.py` for an executable example that
+waits for manual preparation, keeps the dialog open, and reports programming
+progress before closing it.
 
 ### Parameters
 
@@ -62,12 +130,13 @@ To access the form data, use `self.dialog.response_data` after `display()` retur
 |---|---|---|---|
 | `title` | `str` | `""` | Dialog heading |
 | `text` | `str` | `""` | Instructional text shown to the operator |
+| `markdown_file` | path-like | `None` | UTF-8 `.md` file rendered below `text` |
 | `schema` | `dict` | `{}` | JSON Schema for the embedded form (empty = no form) |
 | `defaults` | `dict` | `{}` | Pre-filled values for the form |
 | `responses` | `list[Response]` | `[Ok]` | Buttons to show |
-| `timeout` | `int` | `30` | Seconds before auto-closing (0 = no timeout) |
+| `timeout` | `int` | `30` | Seconds before blocking `display()` returns (0 = wait indefinitely) |
 
-A progress bar in the dialog counts down the timeout.
+For blocking dialogs, the progress bar represents elapsed timeout. For non-blocking dialogs, pass `progress` to `update()` to control it explicitly.
 
 ### Available response values
 

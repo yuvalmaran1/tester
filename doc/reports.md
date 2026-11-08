@@ -1,6 +1,6 @@
 # Reports
 
-Reports are self-contained HTML files — they embed all CSS, JavaScript (Plotly), images, and download attachments as base64 data-URIs. A report file can be emailed or archived and opened without a network connection.
+Reports can be generated as self-contained HTML or as PDF. HTML reports include interactive Plotly charts and embedded attachment downloads. PDF reports provide a portable, printable summary with traceability metadata, program attributes, and the complete result table.
 
 ---
 
@@ -8,7 +8,7 @@ Reports are self-contained HTML files — they embed all CSS, JavaScript (Plotly
 
 ### From the UI
 
-After a run completes the **↓ Report** button appears in the dashboard control bar. Clicking it downloads the report for the most recently completed run.
+After a run completes, **HTML** and **PDF** download buttons appear in the dashboard control bar.
 
 On the **Runs** page (`/results`), every row has a view and a download button. View opens the report in a new browser tab; Download saves it locally.
 
@@ -26,6 +26,11 @@ with open("./my_report.html", "w", encoding="utf-8") as f:
 # Or save directly:
 report = TestReport(tester.test_run, path="./my_report.html")
 report.generate()
+
+# Generate PDF bytes:
+pdf_bytes = TestReport(tester.test_run).generate_pdf()
+with open("./my_report.pdf", "wb") as f:
+    f.write(pdf_bytes)
 ```
 
 ### From the database
@@ -37,7 +42,10 @@ from tester.TestReport import TestReport
 db = TestDB("./results.db")
 run = db.get_run(run_id=42)
 html = TestReport(run).generate()
+pdf = TestReport(run).generate_pdf()
 ```
+
+The HTTP API exposes `/get_report_pdf` for the latest run and `/generate_report_pdf/<id>` for a historical run.
 
 ---
 
@@ -88,7 +96,7 @@ A table with one row per test case:
 | **Result** | Colour-coded badge |
 | **Comment** | Free-text comment from the test case |
 
-For **Numeric2d** test cases, an interactive Plotly chart is rendered inline in the row immediately below the test result. The chart shows the measured curve (green) against min tolerance (blue dashed) and max tolerance (red dashed), with a shaded band between the limits.
+For **Numeric2d** test cases, a chart is rendered inline in the row immediately below the test result. HTML reports use an interactive Plotly chart; PDF reports use a printable vector chart in the same table position. Both show the measured curve (green) against min tolerance (blue dashed) and max tolerance (red dashed), with a shaded band between the limits.
 
 ### Attachments section
 
@@ -102,7 +110,9 @@ Both are embedded as base64 data-URIs so they download without a server.
 
 ## Report Appearance
 
-Reports use a dark colour scheme that mirrors the web UI:
+The interactive HTML report uses the web UI's dark colour scheme. The PDF uses the same information hierarchy in a light, print-oriented layout: report header, six summary cards, side-by-side DUT and program panels, program attributes, colour-coded results, and page footers with run identity and page number. Both formats embed the same Vera Sans font family and use a matching type scale.
+
+Result colours are preserved in both formats:
 
 | Result | Colour |
 |---|---|
@@ -113,4 +123,4 @@ Reports use a dark colour scheme that mirrors the web UI:
 | SKIPPED | Slate `#64748b` |
 | ABORTED | Purple `#a78bfa` |
 
-The report is fully responsive and renders on mobile screens.
+The HTML report is fully responsive and renders on mobile screens. The PDF uses landscape A4 pages for a readable complete result table.
