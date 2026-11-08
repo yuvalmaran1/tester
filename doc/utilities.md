@@ -54,6 +54,29 @@ response = self.dialog.display(
 
 The return value is a response object such as `{"rsp": "Ok"}`. The submitted form values are available through `self.dialog.response_data`.
 
+### With Markdown and images
+
+Pass a UTF-8 `.md` file to display headings, lists, links, code, tables, and other Markdown formatting. Relative local images referenced by the file are included automatically:
+
+```markdown
+# Connect the fixture
+
+1. Connect the **red cable** to J4.
+2. Confirm that the status LED is green.
+
+![Correct wiring](images/fixture-wiring.png)
+```
+
+```python
+response = self.dialog.display(
+    title="Fixture setup",
+    markdown_file="operator-instructions/connect-fixture.md",
+    responses=[TestDialog.Response.Ok, TestDialog.Response.Cancel],
+)
+```
+
+Image paths are resolved relative to the Markdown file. Remote image URLs also work. Plain `text` and `markdown_file` can be used together; the plain text appears first.
+
 ### Non-blocking workflow
 
 `display_non_blocking()` returns immediately. Operator responses are recorded without hiding the dialog, allowing a test to change the instructions, remove buttons, and report operation progress before explicitly closing it.
@@ -91,7 +114,7 @@ The non-blocking methods are:
 |---|---|
 | `display_non_blocking(...)` | Opens the dialog and returns the `TestDialog` immediately |
 | `wait_for_response(timeout=None, clear=True)` | Optionally waits for the next response without hiding the dialog |
-| `update(...)` | Changes title, text, schema, defaults, buttons, or progress in place |
+| `update(...)` | Changes title, text, Markdown file, schema, defaults, buttons, or progress in place |
 | `close()` | Explicitly hides the dialog |
 
 `response` and `response_data` always contain the most recently submitted values.
@@ -107,6 +130,7 @@ progress before closing it.
 |---|---|---|---|
 | `title` | `str` | `""` | Dialog heading |
 | `text` | `str` | `""` | Instructional text shown to the operator |
+| `markdown_file` | path-like | `None` | UTF-8 `.md` file rendered below `text` |
 | `schema` | `dict` | `{}` | JSON Schema for the embedded form (empty = no form) |
 | `defaults` | `dict` | `{}` | Pre-filled values for the form |
 | `responses` | `list[Response]` | `[Ok]` | Buttons to show |

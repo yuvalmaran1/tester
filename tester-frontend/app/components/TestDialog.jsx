@@ -12,7 +12,47 @@ import {
     Typography
 } from '@mui/material';
 import _ from "lodash";
+import Markdown from 'markdown-to-jsx';
 import * as React from 'react';
+
+const MarkdownImageContext = React.createContext({});
+
+const MarkdownImage = ({ src, alt, ...props }) => {
+    const images = React.useContext(MarkdownImageContext);
+
+    return (
+        <Box
+            component="img"
+            src={images[src] || src}
+            alt={alt || ''}
+            {...props}
+            sx={{
+                display: 'block',
+                maxWidth: '100%',
+                maxHeight: '60vh',
+                width: 'auto',
+                height: 'auto',
+                my: 2,
+                borderRadius: '6px'
+            }}
+        />
+    );
+};
+
+const markdownOptions = {
+    disableParsingRawHTML: true,
+    overrides: {
+        h1: { props: { style: { fontSize: '1.75rem', margin: '0 0 16px' } } },
+        h2: { props: { style: { fontSize: '1.4rem', margin: '24px 0 12px' } } },
+        h3: { props: { style: { fontSize: '1.15rem', margin: '20px 0 8px' } } },
+        p: { props: { style: { lineHeight: 1.65, margin: '0 0 12px' } } },
+        a: { props: { target: '_blank', rel: 'noopener noreferrer' } },
+        img: { component: MarkdownImage },
+        code: { props: { style: { background: '#f1f5f9', padding: '2px 5px', borderRadius: '4px' } } },
+        pre: { props: { style: { overflowX: 'auto', background: '#f1f5f9', padding: '12px', borderRadius: '6px' } } },
+        blockquote: { props: { style: { margin: '16px 0', paddingLeft: '16px', borderLeft: '4px solid #94a3b8' } } }
+    }
+};
 
 export default function TestDialog(props) {
     const { onClose, data } = props;
@@ -58,12 +98,24 @@ export default function TestDialog(props) {
             <DialogContent sx={{ p: 3 }}>
                 <Grid container spacing={3}>
                     <Grid item xs={12}>
-                        <Typography variant="body1" sx={{
-                            color: '#64748b',
-                            lineHeight: 1.6
-                        }}>
-                            {_.get(data, 'text', '')}
-                        </Typography>
+                        {_.get(data, 'text', '') && (
+                            <Typography variant="body1" sx={{
+                                color: '#64748b',
+                                lineHeight: 1.6,
+                                mb: _.get(data, 'markdown', '') ? 2 : 0
+                            }}>
+                                {_.get(data, 'text', '')}
+                            </Typography>
+                        )}
+                        {_.get(data, 'markdown', '') && (
+                            <MarkdownImageContext.Provider value={_.get(data, 'markdown_images', {})}>
+                                <Box sx={{ color: '#334155', overflowWrap: 'anywhere' }}>
+                                    <Markdown options={markdownOptions}>
+                                        {_.get(data, 'markdown', '')}
+                                    </Markdown>
+                                </Box>
+                            </MarkdownImageContext.Provider>
+                        )}
                     </Grid>
 
                     {_.get(data, 'schema', {}).properties && Object.keys(_.get(data, 'schema', {}).properties).length > 0 && (

@@ -27,6 +27,25 @@ test('renders the dialog description text', () => {
     ).toBeInTheDocument();
 });
 
+test('renders styled markdown content', () => {
+    renderDialog({ markdown: '# Connect fixture\n\nUse the **red cable**.' });
+
+    expect(screen.getByRole('heading', { name: 'Connect fixture' })).toBeInTheDocument();
+    expect(screen.getByText('red cable')).toHaveStyle({ fontWeight: 'bold' });
+});
+
+test('renders markdown images from the packaged image map', () => {
+    renderDialog({
+        markdown: '![Fixture wiring](fixture.png)',
+        markdown_images: { 'fixture.png': 'data:image/png;base64,cG5n' }
+    });
+
+    expect(screen.getByRole('img', { name: 'Fixture wiring' })).toHaveAttribute(
+        'src',
+        'data:image/png;base64,cG5n'
+    );
+});
+
 test('renders all response buttons', () => {
     renderDialog({ responses: ['OK', 'Cancel', 'Retry'] });
     expect(screen.getByRole('button', { name: 'OK' })).toBeInTheDocument();

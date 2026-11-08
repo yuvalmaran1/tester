@@ -44,3 +44,43 @@ def test_blocking_dialog_remains_compatible():
 
     assert response == {"rsp": "Yes"}
     assert dialog.show is False
+
+
+def test_dialog_encodes_markdown_file_and_local_images(tmp_path):
+    image = tmp_path / "fixture.png"
+    image.write_bytes(b"png content")
+    markdown = tmp_path / "instructions.md"
+    markdown.write_text(
+        "# Connect fixture\n\n![Fixture](fixture.png)",
+        encoding="utf-8",
+    )
+
+    dialog = Dialog().display_non_blocking(markdown_file=markdown)
+    state = dialog.encode()
+
+    assert state["markdown"] == "# Connect fixture\n\n![Fixture](fixture.png)"
+    assert state["markdown_images"]["fixture.png"].startswith("data:image/png;base64,")
+    dialog.close()
+
+
+def test_non_blocking_dialog_can_update_markdown_file(tmp_path):
+    markdown = tmp_path / "complete.md"
+    markdown.write_text("## Programming complete", encoding="utf-8")
+    dialog = Dialog().display_non_blocking(text="Programming...")
+
+    dialog.update(markdown_file=markdown, progress=100)
+
+    assert dialog.encode()["markdown"] == "## Programming complete"
+    dialog.close()
+
+
+def test_dialog_rejects_non_markdown_file(tmp_path):
+    text_file = tmp_path / "instructions.txt"
+    text_file.write_text("Not Markdown", encoding="utf-8")
+
+    try:
+        Dialog().display_non_blocking(markdown_file=text_file)
+    except ValueError as error:
+        assert str(error) == "markdown_file must reference a .md file"
+    else:
+        raise AssertionError("Expected a ValueError for a non-Markdown file")

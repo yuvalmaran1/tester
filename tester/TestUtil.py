@@ -1,3 +1,7 @@
+import base64
+import mimetypes
+import pathlib
+import re
 from threading import Event, RLock
 from enum import Enum, auto
 from time import time
@@ -22,6 +26,8 @@ class TestAttachment(metaclass=Singleton):
 
 class TestDialog(metaclass=Singleton):
 
+    _MARKDOWN_IMAGE = re.compile(r'!\[[^\]]*\]\((?:<([^>]+)>|([^\s)]+))')
+
     class Response(Enum):
         Ok = auto()
         Cancel = auto()
@@ -35,6 +41,8 @@ class TestDialog(metaclass=Singleton):
         self.show = False
         self.title = 'untitled'
         self.text = ''
+        self.markdown = ''
+        self.markdown_images = {}
         self.responses = [TestDialog.Response.Ok]
         self.schema = {"type": "object", "properties": {}}
         self.defaults = {}
@@ -44,10 +52,39 @@ class TestDialog(metaclass=Singleton):
         self.start_time = 0
         self.progress = None
 
-    def _open(self, title, text, schema, defaults, timeout, responses, close_on_response):
+    @classmethod
+    def _load_markdown(cls, markdown_file):
+        if markdown_file is None:
+            return '', {}
+
+        markdown_path = pathlib.Path(markdown_file).resolve()
+        if markdown_path.suffix.lower() != '.md':
+            raise ValueError('markdown_file must reference a .md file')
+
+        markdown = markdown_path.read_text(encoding='utf-8')
+        images = {}
+        for match in cls._MARKDOWN_IMAGE.finditer(markdown):
+            source = match.group(1) or match.group(2)
+            if '://' in source or source.startswith(('data:', '#', '/')):
+                continue
+
+            image_path = (markdown_path.parent / source).resolve()
+            mime_type, _ = mimetypes.guess_type(image_path)
+            if not image_path.is_file() or not (mime_type or '').startswith('image/'):
+                continue
+
+            encoded = base64.b64encode(image_path.read_bytes()).decode('ascii')
+            images[source] = f'data:{mime_type};base64,{encoded}'
+        return markdown, images
+
+    def _open(self, title, text, markdown_file, schema, defaults, timeout, responses,
+              close_on_response):
+        markdown, markdown_images = self._load_markdown(markdown_file)
         with self._lock:
             self.title = title
             self.text = text
+            self.markdown = markdown
+            self.markdown_images = markdown_images
             self.responses = list(responses)
             self.schema = schema
             self.defaults = defaults
@@ -77,11 +114,12 @@ class TestDialog(metaclass=Singleton):
             self._response_event.set()
 
     def display(self, title: str = '', text: str = '', schema: dict = None,
-                defaults=None, timeout=30, responses=None) -> dict:
+                defaults=None, timeout=30, responses=None, markdown_file=None) -> dict:
         """Display a dialog and block until the operator responds or it times out."""
         self._open(
             title,
             text,
+            markdown_file,
             schema or {"type": "object", "properties": {}},
             defaults or {},
             timeout,
@@ -95,7 +133,7 @@ class TestDialog(metaclass=Singleton):
         return self.response
 
     def display_non_blocking(self, title: str = '', text: str = '', schema: dict = None,
-                             defaults=None, timeout=0, responses=None):
+                             defaults=None, timeout=0, responses=None, markdown_file=None):
         """Display an interactive dialog and return immediately.
 
         Submitted responses leave the dialog open. Call ``wait_for_response`` or
@@ -105,6 +143,7 @@ class TestDialog(metaclass=Singleton):
         self._open(
             title,
             text,
+            markdown_file,
             schema or {"type": "object", "properties": {}},
             defaults or {},
             timeout,
@@ -123,14 +162,20 @@ class TestDialog(metaclass=Singleton):
                 self._response_event.clear()
             return response
 
-    def update(self, *, title=None, text=None, schema=None, defaults=None,
-               responses=None, progress=None):
+    def update(self, *, title=None, text=None, markdown_file=None, schema=None,
+               defaults=None, responses=None, progress=None):
         """Update visible dialog content without closing or reopening it."""
+        markdown = markdown_images = None
+        if markdown_file is not None:
+            markdown, markdown_images = self._load_markdown(markdown_file)
         with self._lock:
             if title is not None:
                 self.title = title
             if text is not None:
                 self.text = text
+            if markdown is not None:
+                self.markdown = markdown
+                self.markdown_images = markdown_images
             if schema is not None:
                 self.schema = schema
             if defaults is not None:
@@ -152,6 +197,8 @@ class TestDialog(metaclass=Singleton):
                 "show": self.show,
                 "title": self.title,
                 "text": self.text,
+                "markdown": self.markdown,
+                "markdown_images": self.markdown_images,
                 "responses": [r.name for r in self.responses],
                 "schema": self.schema,
                 "defaults": self.defaults,
