@@ -4,7 +4,7 @@ import copy
 import pyjson5 as json
 import os
 import ctypes
-from threading import Thread
+from threading import RLock, Thread
 from datetime import datetime, timedelta
 from abc import ABC, abstractmethod, ABCMeta
 from .TestDB import TestDB
@@ -61,6 +61,7 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         self.serial_number = ''
         self.run_thread = None
         self.current_operator = None  # dict with id/username/display_name/role or None
+        self._reload_lock = RLock()
 
         # Seed admin and resolve initial operator
         self._seed_admin()
@@ -245,22 +246,34 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         return self.state
 
     def _reload_handler(self):
-        if self.running or not self._is_admin():
-            return
-        dut_name = self.active_dut.name if self.active_dut else next(iter(self.duts)).name
-        program_name = self.active_program.name if self.active_program else None
-        self.duts = self.populate_duts(json.load(open(self.config.duts_file,'r')))
-        with open(self.config.duts_file, 'rb') as _f:
-            self.config_hash = hashlib.sha256(_f.read()).hexdigest()
-        self.active_dut: Dut = None
-        self.dut_setup: TestCase = None
-        self.dut_cleanup: TestCase = None
-        self.active_program: TestProgram = None
-        self.test_run = None
-        self.select_dut(dut_name)
-        self.select_program(program_name)
-        self._generate_state()
-        self.interface.emit_event(TesterRequest.State.value, self.state)
+        with self._reload_lock:
+            if self.running or not self._is_admin():
+                return
+            dut_name = self.active_dut.name if self.active_dut else None
+            program_name = self.active_program.name if self.active_program else None
+            with open(self.config.duts_file, 'r') as config_file:
+                new_duts = self.populate_duts(json.load(config_file))
+            if not new_duts:
+                raise ValueError("DUT configuration must contain at least one DUT")
+            with open(self.config.duts_file, 'rb') as config_file:
+                config_hash = hashlib.sha256(config_file.read()).hexdigest()
+            selected_dut = next((dut for dut in new_duts if dut.name == dut_name), new_duts[0])
+            if dut_name and selected_dut.name != dut_name:
+                self.logger.warning(
+                    f"Previously selected DUT '{dut_name}' is no longer configured; "
+                    f"selected '{selected_dut.name}'"
+                )
+            self.duts = new_duts
+            self.config_hash = config_hash
+            self.active_dut: Dut = None
+            self.dut_setup: TestCase = None
+            self.dut_cleanup: TestCase = None
+            self.active_program: TestProgram = None
+            self.test_run = None
+            self.select_dut(selected_dut.name)
+            self.select_program(program_name)
+            self._generate_state()
+            self.interface.emit_event(TesterRequest.State.value, self.state)
 
     def _attr_handler(self,attr):
         if not self._is_authenticated() or self.running:

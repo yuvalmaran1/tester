@@ -4,6 +4,7 @@ All tests use the make_tester factory fixture from conftest.py which wires
 fast, headless tester instances to temporary file paths.
 """
 import threading
+import json
 import pytest
 from tester.TestCase import TestCase
 from tester.TestResult import TestResult
@@ -390,6 +391,32 @@ def test_reload_handler_preserves_program_selection(make_tester):
     original_prog = t.active_program.name
     t._reload_handler()
     assert t.active_program.name == original_prog
+
+
+def test_reload_handler_selects_first_dut_when_previous_dut_was_removed(make_tester):
+    t = make_tester()
+    replacement = {
+        **DUTS_STANDARD,
+        "duts": [{**DUTS_STANDARD["duts"][0], "name": "Replacement DUT"}],
+    }
+    with open(t.config.duts_file, "w", encoding="utf-8") as config_file:
+        json.dump(replacement, config_file)
+
+    t._reload_handler()
+
+    assert t.active_dut.name == "Replacement DUT"
+
+
+def test_reload_handler_rejects_empty_dut_configuration_without_losing_selection(make_tester):
+    t = make_tester()
+    original_dut = t.active_dut
+    with open(t.config.duts_file, "w", encoding="utf-8") as config_file:
+        json.dump({"duts": []}, config_file)
+
+    with pytest.raises(ValueError, match="at least one DUT"):
+        t._reload_handler()
+
+    assert t.active_dut is original_dut
 
 
 def test_reload_handler_is_blocked_while_running(make_tester, monkeypatch):
