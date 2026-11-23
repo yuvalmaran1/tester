@@ -83,6 +83,7 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         self.interface.start_run_handler = self._start_run_handler
         self.interface.stop_run_handler = self._stop_run_handler
         self.interface.get_dut_image_handler = self._get_dut_image_handler
+        self.interface.get_company_logo_handler = self._get_company_logo_handler
         self.interface.get_report_handler = self._get_report_handler
         self.interface.get_pdf_report_handler = self._get_pdf_report_handler
         self.interface.get_runs_handler = self._get_runs_handler
@@ -202,6 +203,12 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
     def _get_dut_image_handler(self):
         path = self.duts_path.joinpath(self.active_dut.image)
         return path if os.path.isfile(path) else None
+
+    def _get_company_logo_handler(self):
+        logo = self.config.company_logo
+        if logo and os.path.isfile(logo):
+            return pathlib.Path(logo).resolve()
+        return None
 
     def _get_report_handler(self, id=0):
         try:

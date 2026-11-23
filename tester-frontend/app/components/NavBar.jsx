@@ -51,15 +51,24 @@ export default function Sidebar() {
     const { connected, connecting } = useConnection();
     const [testerName, setTesterName] = useState('');
     const [operator, setOperator] = useState(null);
+    const [companyName, setCompanyName] = useState('');
+    const [hasCompanyLogo, setHasCompanyLogo] = useState(false);
 
     useEffect(() => {
+        const applyBranding = (tester) => {
+            if (!tester) return;
+            if ('company_name' in tester) setCompanyName(tester.company_name || '');
+            if ('company_logo' in tester) setHasCompanyLogo(Boolean(tester.company_logo));
+        };
         const onTester = (data) => {
             if (data?.name) setTesterName(data.name);
             setOperator(data?.operator ?? null);
+            applyBranding(data);
         };
         const onState = (data) => {
             if (data?.tester?.name) setTesterName(data.tester.name);
             setOperator(data?.tester?.operator ?? null);
+            applyBranding(data?.tester);
         };
         socket.on('tester', onTester);
         socket.on('state', onState);
@@ -83,21 +92,28 @@ export default function Sidebar() {
             {/* Brand */}
             <div style={{ borderBottom: `1px solid ${theme.palette.divider}`, padding: '1rem 1.25rem' }}>
                 <div className="flex items-center gap-3">
-                    <Image src="/icon.svg" alt="logo" width={34} height={34} style={{ flexShrink: 0 }} />
+                    {hasCompanyLogo ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src="/company_logo" alt={companyName || 'Company logo'}
+                            style={{ width: 34, height: 34, objectFit: 'contain', flexShrink: 0 }} />
+                    ) : (
+                        <Image src="/icon.svg" alt="logo" width={34} height={34} style={{ flexShrink: 0 }} />
+                    )}
                     <div style={{ minWidth: 0 }}>
                         <div style={{
                             color: theme.palette.text.primary, fontWeight: 700, fontSize: '0.875rem',
                             lineHeight: 1.25, overflow: 'hidden',
                             textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                         }}>
-                            {testerName || 'HiL Framework'}
+                            {companyName || testerName || 'HiL Framework'}
                         </div>
                         <div style={{
                             color: theme.palette.primary.main, fontSize: '0.6875rem', fontWeight: 600,
                             textTransform: 'uppercase', letterSpacing: '0.07em',
-                            marginTop: '2px',
+                            marginTop: '2px', overflow: 'hidden',
+                            textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                         }}>
-                            Test Framework
+                            {companyName ? (testerName || 'Test Framework') : 'Test Framework'}
                         </div>
                     </div>
                 </div>

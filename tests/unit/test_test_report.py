@@ -36,6 +36,29 @@ def test_html_embeds_the_same_vera_font_family_as_pdf():
     assert css.count("data:font/ttf;base64,") == 2
 
 
+def test_html_defaults_to_light_theme_with_toggle():
+    run = Run(
+        tester={"name": "Tester", "version": "1.0"},
+        dut={"name": "DUT", "description": "", "product_id": "P1", "image": ""},
+        program={"name": "Program", "description": "", "attr": {}},
+    )
+    run.start()
+    run.append_result(Numeric2dTestResult(
+        Config(name="Voltage sweep", attr={}, tolerance={"min": 0.0, "max": 2.0}, unit="V", x_unit="s"),
+        {"x": [0, 1, 2], "y": [0.5, 1.0, 1.5]},
+        suite="Sweep",
+    ))
+    run.end()
+
+    html = Report(run).generate()
+
+    assert '<html lang="en" data-theme="light">' in html
+    assert 'id="theme-toggle"' in html
+    assert 'html[data-theme="dark"]' in html
+    assert 'window.toggleReportTheme' in html
+    assert '"paper_bgcolor": "#161b2e"' in html
+
+
 def test_pdf_dut_image_preserves_aspect_ratio():
     image = Report._pdf_image(Report.DUT_IMAGE_PATH, max_width=72, max_height=72)
 

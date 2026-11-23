@@ -1,0 +1,53 @@
+name: Release
+
+on:
+    push:
+        tags: ["v*.*.*"]
+
+permissions:
+    contents: write
+
+jobs:
+    release:
+        name: Build and publish release
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "npm"
+                  cache-dependency-path: tester-frontend/package-lock.json
+
+            - name: Build frontend
+              working-directory: tester-frontend
+              run: |
+                  npm ci
+                  npm run build
+                  test -f ../tester/frontend/index.html
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.13"
+
+            - name: Build wheel and sdist
+              run: |
+                  python -m pip install --upgrade pip build
+                  TESTER_VERSION="${GITHUB_REF_NAME#v}" python -m build
+
+            - name: Test and verify the built wheel
+              run: |
+                  pip install dist/*.whl pytest
+                  pytest tests/ -q --tb=short
+                  cd "$RUNNER_TEMP"
+                  python -c "import pathlib, tester; root = pathlib.Path(tester.__file__).parent; assert (root / 'frontend' / 'index.html').is_file(), 'frontend missing from wheel'; assert (root / 'Assets' / 'dut.png').is_file(), 'assets missing from wheel'"
+                  python -c "from importlib.metadata import version; assert version('tester') == '${GITHUB_REF_NAME#v}', version('tester')"
+
+            - name: Create GitHub release
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --generate-notes

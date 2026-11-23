@@ -2,6 +2,20 @@
 
 The web UI is served by the Flask backend on port 5050. It has three pages reachable via the top navigation bar.
 
+## Company branding
+
+The top-left corner of the sidebar shows the framework icon and the tester name by default. To show your company instead, set a name and/or a logo image (PNG, JPG or SVG; paths are relative to the working directory, like `duts_file`):
+
+```python
+cfg = TesterConfig(
+	# ...
+	company_name="Acme Corp",
+	company_logo="./assets/company_logo.png",
+)
+```
+
+With a company name, the sidebar shows the company name in bold and the tester name beneath it. The logo is drawn at 34×34 px (aspect ratio preserved), so a square image works best. A missing logo file falls back to the framework icon.
+
 ## HTTPS
 
 Report links are relative to the current UI address. If the UI is opened over plain HTTP, PDF downloads are also transferred over HTTP and browsers may warn that the file was loaded over an insecure connection. A link change cannot secure that transfer; the server itself must use TLS.

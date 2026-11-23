@@ -52,6 +52,10 @@ npm run lint         # ESLint
 
 **After any frontend source change**, you must `npm run build` for the Flask server to serve the new version. The Next.js config (`next.config.js`) sets `distDir: '../tester/frontend'` and `output: 'export'`, so the build writes directly into the Python package's static directory.
 
+### Releases
+
+Pushing a `vX.Y.Z` tag runs `.github/workflows/release.yml`: it rebuilds the frontend, builds the wheel/sdist with `TESTER_VERSION` taken from the tag (read by `setup.py`), runs the tests, and attaches `dist/*` to a GitHub Release.
+
 ## Architecture
 
 ### Python Backend (`tester/`)
@@ -92,7 +96,7 @@ TestRun           — in-progress run state; written to DB on completion
 **Configuration files** (all JSON5-compatible via `pyjson5`):
 - `duts.json` — defines DUTs, test suites, programs, and their relationships
 - `setup.json` / `station.json` — station-specific hardware config, validated against a `StationConfig` Pydantic model
-- `TesterConfig` dataclass — wires everything together; `db_config` is either a file path (SQLite) or a PostgreSQL connection string
+- `TesterConfig` dataclass — wires everything together; `db_config` is either a file path (SQLite) or a PostgreSQL connection string; optional `company_name` / `company_logo` brand the UI sidebar (logo served at `/company_logo`)
 
 **Attribute (`attr`) merge chain** (later wins):
 ```

@@ -83,6 +83,8 @@ class SensorBoardTester(Tester):
             ui=ui,
             station_config_file="./station.json",
             station_config_class=SensorBoardStationConfig,
+            company_name="Example Corp",
+            company_logo="./assets/company_logo.svg",
         )
         super().__init__(cfg)
 

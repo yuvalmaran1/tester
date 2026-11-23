@@ -75,6 +75,7 @@ class TesterIf:
         self.set_dut_handler = None
         self.set_program_handler = None
         self.get_dut_image_handler = None
+        self.get_company_logo_handler = None
         self.get_report_handler = None
         self.get_pdf_report_handler = None
         self.get_runs_handler = None
@@ -143,6 +144,7 @@ class TesterIf:
         self._add_endpoint(endpoint='/favicon.ico', endpoint_name='/favicon.ico', handler=self.favicon_handler)
         self._add_endpoint(endpoint='/<path:path>', endpoint_name='/<path:path>', handler=self.file_handler)
         self._add_endpoint(endpoint='/dut_image', endpoint_name='/dut_image', handler=self._get_dut_image_handler)
+        self._add_endpoint(endpoint='/company_logo', endpoint_name='/company_logo', handler=self._get_company_logo_handler)
         self._add_endpoint(endpoint='/get_report', endpoint_name='/get_report', handler=self._get_report_handler)
         self._add_endpoint(endpoint='/get_report_pdf', endpoint_name='/get_report_pdf', handler=self._get_pdf_report_handler)
         self._add_endpoint(endpoint='/get_runs', endpoint_name='/get_runs', handler=self._get_runs_handler)
@@ -244,6 +246,12 @@ class TesterIf:
             img = DUT_IMAGE_PATH
 
         return send_file(img, mimetype='image/png')
+
+    def _get_company_logo_handler(self):
+        logo = self.get_company_logo_handler() if self.get_company_logo_handler else None
+        if logo is None:
+            return Response(status=404)
+        return send_file(logo)
 
     def _get_available_tests_handler(self):
         if self.get_available_tests_handler:

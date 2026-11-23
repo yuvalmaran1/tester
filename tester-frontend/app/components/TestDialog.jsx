@@ -126,7 +126,9 @@ export default function TestDialog(props) {
                                 backgroundColor: 'background.default',
                                 borderRadius: '12px',
                                 p: 3,
-                                border: `1px solid ${theme.palette.divider}`
+                                border: `1px solid ${theme.palette.divider}`,
+                                // JSONForms vertical layouts render controls with zero vertical spacing
+                                '& .MuiGrid-container.MuiGrid-direction-xs-column': { rowGap: 2.5 },
                             }}>
                                 <JsonForms
                                     schema={_.get(data, 'schema', { "type": "object", "properties": {} })}

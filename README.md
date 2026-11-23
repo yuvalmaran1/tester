@@ -50,14 +50,37 @@ Program  ──── ordered subset of the DUT's suites ────► Run
 
 ## Installation
 
+Install a released version (wheel attached to a [GitHub Release](https://github.com/yuvalmaran1/tester/releases)):
+
 ```bash
-pip install git+ssh://git@github.com:yuvalmaran1/tester.git
+pip install https://github.com/yuvalmaran1/tester/releases/download/v1.2.0/tester-1.2.0-py3-none-any.whl
+```
+
+In a `requirements.txt`, pin it the same way:
+
+```text
+tester @ https://github.com/yuvalmaran1/tester/releases/download/v1.2.0/tester-1.2.0-py3-none-any.whl
+```
+
+Or install straight from the repository (uses the committed frontend build):
+
+```bash
+pip install git+ssh://git@github.com/yuvalmaran1/tester.git@v1.2.0
 ```
 
 Or for development (editable install from the repo root):
 
 ```bash
 pip install -e .
+```
+
+### Publishing a release
+
+Push a version tag; the `Release` workflow builds the frontend, builds the wheel/sdist with the tag's version, runs the tests and attaches the files to a GitHub Release:
+
+```bash
+git tag v1.2.0
+git push origin v1.2.0
 ```
 
 ## Quick Start

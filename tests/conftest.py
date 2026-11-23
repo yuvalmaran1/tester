@@ -267,7 +267,7 @@ def make_tester(tmp_path):
     """
     created = []
 
-    def _factory(duts_data=None, require_login=False):
+    def _factory(duts_data=None, require_login=False, **config_kwargs):
         if duts_data is None:
             duts_data = DUTS_STANDARD
         subdir = tmp_path / str(uuid.uuid4())
@@ -284,6 +284,7 @@ def make_tester(tmp_path):
             log_dir=None,
             ui=False,
             require_login=require_login,
+            **config_kwargs,
         )
         t = MinimalTester(cfg)
         created.append(t)

@@ -110,7 +110,7 @@ Both are embedded as base64 data-URIs so they download without a server.
 
 ## Report Appearance
 
-The interactive HTML report uses the web UI's dark colour scheme. The PDF uses the same information hierarchy in a light, print-oriented layout: report header, six summary cards, side-by-side DUT and program panels, program attributes, colour-coded results, and page footers with run identity and page number. Both formats embed the same Vera Sans font family and use a matching type scale.
+The interactive HTML report opens in light mode and has a dark/light toggle button in the header (charts switch colours too; the button is hidden when printing). The PDF uses the same information hierarchy in a light, print-oriented layout: report header, six summary cards, side-by-side DUT and program panels, program attributes, colour-coded results, and page footers with run identity and page number. Both formats embed the same Vera Sans font family and use a matching type scale.
 
 Result colours are preserved in both formats:
 
