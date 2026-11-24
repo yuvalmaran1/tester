@@ -62,6 +62,8 @@ class StateManagerMixin:
             "operator": self.current_operator,
             "serial_number": self.serial_number,
             "ui_theme": self.station_config.ui_theme,
+            "company_name": self.config.company_name,
+            "company_logo": self._get_company_logo_handler() is not None,
         }
         if emit:
             self.interface.emit_event(TesterRequest.Tester.value, self.state['tester'])

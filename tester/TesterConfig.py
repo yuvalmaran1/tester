@@ -18,6 +18,8 @@ class TesterConfig:
     require_login: bool = field(default=True)
     ssl_cert_file: Optional[str] = field(default=None)
     ssl_key_file: Optional[str] = field(default=None)
+    company_name: Optional[str] = field(default=None)  # Shown in the UI sidebar brand area
+    company_logo: Optional[str] = field(default=None)  # Image file path (png/jpg/svg) shown in the UI sidebar
 
     # Backward compatibility property
     @property

@@ -9,6 +9,7 @@ from datetime import timedelta
 import tempfile
 import base64
 import io
+import json
 import math
 import unicodedata
 from xml.sax.saxutils import escape
@@ -82,6 +83,33 @@ class TestReport:
         'UNKNOWN':  {'color': '#64748b', 'bg': 'rgba(100,116,139,0.15)', 'border': 'rgba(100,116,139,0.3)'},
     }
     DEFAULT_PALETTE = {'color': '#818cf8', 'bg': 'rgba(129,140,248,0.15)', 'border': 'rgba(129,140,248,0.3)'}
+
+    # Plotly layout overrides per HTML report theme (applied with Plotly.relayout on toggle)
+    DEFAULT_THEME = 'light'
+    PLOT_THEMES = {
+        'light': {
+            'paper_bgcolor': '#ffffff',
+            'plot_bgcolor': '#f8fafc',
+            'font.color': '#526077',
+            'legend.font.color': '#526077',
+            'title.font.color': '#172033',
+            'xaxis.gridcolor': '#e2e8f0',
+            'xaxis.zerolinecolor': '#cbd5e1',
+            'yaxis.gridcolor': '#e2e8f0',
+            'yaxis.zerolinecolor': '#cbd5e1',
+        },
+        'dark': {
+            'paper_bgcolor': '#161b2e',
+            'plot_bgcolor': '#0d1117',
+            'font.color': '#94a3b8',
+            'legend.font.color': '#94a3b8',
+            'title.font.color': '#e2e8f0',
+            'xaxis.gridcolor': '#1e2d40',
+            'xaxis.zerolinecolor': '#2d3748',
+            'yaxis.gridcolor': '#1e2d40',
+            'yaxis.zerolinecolor': '#2d3748',
+        },
+    }
     PDF_FONT = "VeraSans"
     PDF_FONT_BOLD = "VeraSans-Bold"
 
@@ -561,12 +589,13 @@ class TestReport:
     def _get_result_palette(self, result_name):
         return self.RESULT_COLORS.get(result_name, self.DEFAULT_PALETTE)
 
-    def _dark_plot_layout(self, height=380):
+    def _plot_layout(self, height=380):
+        theme = self.PLOT_THEMES[self.DEFAULT_THEME]
         return dict(
-            template='plotly_dark',
-            paper_bgcolor='#161b2e',
-            plot_bgcolor='#0d1117',
-            font=dict(family='Vera Sans', color='#94a3b8', size=11),
+            template='plotly_white',
+            paper_bgcolor=theme['paper_bgcolor'],
+            plot_bgcolor=theme['plot_bgcolor'],
+            font=dict(family='Vera Sans', color=theme['font.color'], size=11),
             height=height,
             margin=dict(l=64, r=32, t=36, b=64),
             showlegend=True,
@@ -574,7 +603,7 @@ class TestReport:
                 orientation='h', yanchor='bottom', y=1.02,
                 xanchor='right', x=1,
                 bgcolor='rgba(0,0,0,0)',
-                font=dict(family='Vera Sans', color='#94a3b8'),
+                font=dict(family='Vera Sans', color=theme['legend.font.color']),
             ),
         )
 
@@ -592,8 +621,9 @@ class TestReport:
         return go.Scatter(**kw)
 
     def _axis_style(self, title, standoff=10):
+        theme = self.PLOT_THEMES[self.DEFAULT_THEME]
         return dict(title=title, title_standoff=standoff,
-                    gridcolor='#1e2d40', zerolinecolor='#2d3748')
+                    gridcolor=theme['xaxis.gridcolor'], zerolinecolor=theme['xaxis.zerolinecolor'])
 
     # --------------------------------------------------------------- plot HTML
 
@@ -622,8 +652,9 @@ class TestReport:
             fig.add_trace(self._scatter_trace(x, y, 'Measured', '#10b981'))
 
             fig.update_layout(
-                **self._dark_plot_layout(380),
-                title=dict(text=plot_name, font=dict(color='#e2e8f0', size=13)),
+                **self._plot_layout(380),
+                title=dict(text=plot_name,
+                           font=dict(color=self.PLOT_THEMES[self.DEFAULT_THEME]['title.font.color'], size=13)),
                 xaxis=self._axis_style(plot_data.get('xlabel', 'X')),
                 yaxis=self._axis_style(plot_data.get('ylabel', 'Y')),
             )
@@ -651,18 +682,18 @@ class TestReport:
         fig.add_trace(self._scatter_trace(x, y, 'Measured', '#10b981', marker_size=3))
 
         fig.update_layout(
-            **self._dark_plot_layout(260),
+            **self._plot_layout(260),
             xaxis=self._axis_style(plot_data.get('xlabel', 'X'), 8),
             yaxis=self._axis_style(plot_data.get('ylabel', 'Y'), 8),
         )
         div_id = f'inline_{plot_name.replace(" ", "_")}'
-        return f'<div style="padding:.75rem;background:#0d1117">{fig.to_html(include_plotlyjs=False, div_id=div_id)}</div>'
+        return f'<div class="plot-wrap">{fig.to_html(include_plotlyjs=False, div_id=div_id)}</div>'
 
     # --------------------------------------------------------------- table HTML
 
     def _generate_table_html(self, tests_results, colormap=None, numeric2d_plots=None):
         if not tests_results:
-            return '<p style="color:#64748b;padding:1rem">No test results available</p>'
+            return '<p style="color:var(--muted);padding:1rem">No test results available</p>'
 
         CENTER_COLS = {'Time', 'Suite', 'Min', 'Value', 'Max', 'Unit', 'Result'}
         MONO_COLS   = {'Time', 'Min', 'Value', 'Max'}
@@ -797,75 +828,92 @@ class TestReport:
             "format('truetype');font-weight:700;font-style:normal}}\n"
         )
         return font_faces + """
+:root{
+  --bg:#f8fafc;--surface:#ffffff;--surface-2:#eef2ff;
+  --border:#d8e0ea;--border-soft:rgba(216,224,234,.8);
+  --text:#172033;--text-body:#334155;--muted:#526077;
+  --primary:#4f46e5;--primary-text:#4f46e5;--primary-strong:#4338ca;
+  --primary-hover:rgba(79,70,229,.08);--btn-border:rgba(79,70,229,.35);
+  --header-from:#ffffff;--header-to:#eef2ff;
+  color-scheme:light}
+html[data-theme="dark"]{
+  --bg:#0d1117;--surface:#161b2e;--surface-2:#1a2035;
+  --border:#2d3748;--border-soft:rgba(45,55,72,.6);
+  --text:#e2e8f0;--text-body:#cbd5e1;--muted:#64748b;
+  --primary:#6366f1;--primary-text:#818cf8;--primary-strong:#a5b4fc;
+  --primary-hover:rgba(99,102,241,.15);--btn-border:rgba(99,102,241,.4);
+  --header-from:#161b2e;--header-to:#1a1f3a;
+  color-scheme:dark}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Vera Sans',sans-serif;
-     background:#0d1117;color:#e2e8f0;line-height:1.6;font-size:15px}
-a{color:#818cf8;text-decoration:none}
+     background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+a{color:var(--primary-text);text-decoration:none}
 
 /* ── Header ── */
-.header{background:linear-gradient(135deg,#161b2e 0%,#1a1f3a 100%);
-        border-bottom:1px solid #2d3748;padding:1.25rem 2rem}
+.header{background:linear-gradient(135deg,var(--header-from) 0%,var(--header-to) 100%);
+        border-bottom:1px solid var(--border);padding:1.25rem 2rem}
 .header-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;
               justify-content:space-between;flex-wrap:wrap;gap:1rem}
 .header-brand{display:flex;align-items:center;gap:1rem}
 .logo{height:44px;width:44px;flex-shrink:0}
-.header-title h1{font-size:1.375rem;font-weight:700;color:#e2e8f0;letter-spacing:-0.01em}
-.header-title p{font-size:.8125rem;color:#64748b;margin-top:2px}
+.header-title h1{font-size:1.375rem;font-weight:700;color:var(--text);letter-spacing:-0.01em}
+.header-title p{font-size:.8125rem;color:var(--muted);margin-top:2px}
 .header-meta{display:flex;gap:2rem;flex-wrap:wrap}
-.meta-item{font-size:.8rem;color:#64748b;line-height:1.5}
-.meta-item strong{color:#a5b4fc;font-weight:600;display:block}
+.meta-item{font-size:.8rem;color:var(--muted);line-height:1.5}
+.meta-item strong{color:var(--primary-strong);font-weight:600;display:block}
 
 /* ── Container ── */
 .container{max-width:1400px;margin:0 auto;padding:1.75rem 2rem}
 
 /* ── Card ── */
-.card{background:#161b2e;border:1px solid #2d3748;border-radius:10px;
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;
       padding:1.5rem;margin-bottom:1.5rem}
 .card-title{font-size:.72rem;font-weight:700;text-transform:uppercase;
-            letter-spacing:.08em;color:#6366f1;margin-bottom:1.25rem}
+            letter-spacing:.08em;color:var(--primary);margin-bottom:1.25rem}
 
 /* ── Stats ── */
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
             gap:1rem;margin-bottom:1.5rem}
-.stat-card{background:#161b2e;border:1px solid #2d3748;
+.stat-card{background:var(--surface);border:1px solid var(--border);
            border-left:3px solid var(--accent,#6366f1);
            border-radius:8px;padding:1.25rem;text-align:center}
 .stat-number{font-size:1.625rem;font-weight:700;
              color:var(--accent,#6366f1);line-height:1.2;
              word-break:break-word}
 .stat-label{font-size:.6875rem;font-weight:600;text-transform:uppercase;
-            letter-spacing:.07em;color:#64748b;margin-top:.375rem}
+            letter-spacing:.07em;color:var(--muted);margin-top:.375rem}
 
 /* ── Two-col ── */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
 
 /* ── Info items ── */
 .info-item{display:flex;justify-content:space-between;align-items:flex-start;
-           padding:.5625rem 0;border-bottom:1px solid rgba(45,55,72,.6);
+           padding:.5625rem 0;border-bottom:1px solid var(--border-soft);
            font-size:.875rem;gap:1rem}
 .info-item:last-child{border-bottom:none}
-.info-label{color:#64748b;font-weight:500;flex-shrink:0}
-.info-value{color:#cbd5e1;font-weight:500;text-align:right}
+.info-label{color:var(--muted);font-weight:500;flex-shrink:0}
+.info-value{color:var(--text-body);font-weight:500;text-align:right}
 
 /* ── DUT image ── */
 .dut-layout{display:flex;gap:1.5rem;align-items:flex-start}
 .dut-info{flex:1;min-width:0}
 .dut-image{width:110px;height:110px;object-fit:contain;border-radius:8px;
-           border:1px solid #2d3748;background:#0d1117;display:block;flex-shrink:0}
+           border:1px solid var(--border);background:var(--bg);display:block;flex-shrink:0}
 
 /* ── Table ── */
 .table-wrapper{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:.8375rem}
-thead th{background:#1a2035;color:#818cf8;font-weight:600;text-transform:uppercase;
+thead th{background:var(--surface-2);color:var(--primary-text);font-weight:600;text-transform:uppercase;
          letter-spacing:.06em;font-size:.7rem;padding:.875rem 1rem;
-         text-align:left;border-bottom:2px solid #2d3748;white-space:nowrap}
-tbody td{padding:.6875rem 1rem;border-bottom:1px solid rgba(45,55,72,.5);
-         color:#cbd5e1;vertical-align:middle}
-tbody tr:hover td{background:rgba(99,102,241,.04)}
+         text-align:left;border-bottom:2px solid var(--border);white-space:nowrap}
+tbody td{padding:.6875rem 1rem;border-bottom:1px solid var(--border-soft);
+         color:var(--text-body);vertical-align:middle}
+tbody tr:hover td{background:var(--primary-hover)}
 .text-center{text-align:center!important}
 .text-mono{font-family:'Courier New',monospace;font-size:.8rem}
-.plot-row td{background:#0d1117!important;padding:0!important;
-             border-bottom:1px solid rgba(45,55,72,.5)}
+.plot-row td{background:var(--bg)!important;padding:0!important;
+             border-bottom:1px solid var(--border-soft)}
+.plot-wrap{padding:.75rem;background:var(--bg)}
 
 /* ── Badge ── */
 .badge{display:inline-block;padding:.2rem .625rem;border-radius:9999px;
@@ -874,24 +922,24 @@ tbody tr:hover td{background:rgba(99,102,241,.04)}
 
 /* ── Download buttons ── */
 .btn-download{display:inline-flex;align-items:center;gap:.5rem;
-              padding:.5rem 1rem;background:#1a2035;
-              border:1px solid rgba(99,102,241,.4);border-radius:7px;
-              color:#818cf8;font-size:.8375rem;font-weight:600;
+              padding:.5rem 1rem;background:var(--surface-2);
+              border:1px solid var(--btn-border);border-radius:7px;
+              color:var(--primary-text);font-size:.8375rem;font-weight:600;
               margin:.25rem .5rem .25rem 0;
               transition:background .15s,color .15s}
-.btn-download:hover{background:rgba(99,102,241,.15);color:#a5b4fc}
+.btn-download:hover{background:var(--primary-hover);color:var(--primary-strong)}
 
 /* ── Attributes table ── */
 .attr-table{width:100%;border-collapse:collapse;font-size:.8375rem}
-.attr-table thead th{background:#1a2035;color:#818cf8;font-weight:600;
+.attr-table thead th{background:var(--surface-2);color:var(--primary-text);font-weight:600;
                      font-size:.7rem;text-transform:uppercase;
                      letter-spacing:.06em;padding:.75rem 1rem;
-                     border-bottom:2px solid #2d3748;text-align:left}
-.attr-table td{padding:.5625rem 1rem;border-bottom:1px solid rgba(45,55,72,.5);
+                     border-bottom:2px solid var(--border);text-align:left}
+.attr-table td{padding:.5625rem 1rem;border-bottom:1px solid var(--border-soft);
                vertical-align:top}
-.attr-table td:first-child{color:#818cf8;font-weight:600;
+.attr-table td:first-child{color:var(--primary-text);font-weight:600;
                            width:30%;white-space:nowrap}
-.attr-table td:last-child{font-family:monospace;color:#cbd5e1;word-break:break-all}
+.attr-table td:last-child{font-family:monospace;color:var(--text-body);word-break:break-all}
 
 /* ── Modified indicator ── */
 .modified-badge{display:inline-flex;align-items:center;gap:.25rem;
@@ -901,6 +949,17 @@ tbody tr:hover td{background:rgba(99,102,241,.04)}
                 font-size:.7rem;font-weight:700;margin-left:.5rem;
                 vertical-align:middle;text-transform:uppercase;
                 letter-spacing:.04em}
+
+/* ── Theme toggle ── */
+.theme-toggle{display:inline-flex;align-items:center;justify-content:center;
+              width:36px;height:36px;border-radius:8px;cursor:pointer;align-self:center;
+              background:var(--surface);border:1px solid var(--border);
+              color:var(--muted);transition:background .15s,color .15s}
+.theme-toggle:hover{background:var(--primary-hover);color:var(--primary-text)}
+.theme-toggle .icon-sun{display:none}
+html[data-theme="dark"] .theme-toggle .icon-sun{display:block}
+html[data-theme="dark"] .theme-toggle .icon-moon{display:none}
+@media print{.theme-toggle{display:none}}
 
 /* ── Responsive ── */
 @media(max-width:900px){
@@ -915,6 +974,39 @@ tbody tr:hover td{background:rgba(99,102,241,.04)}
   .dut-image{width:100%;height:auto;max-height:140px}
 }
 """
+
+    # --------------------------------------------------------- theme toggle
+
+    @staticmethod
+    def _theme_toggle_html():
+        moon = ('<svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" '
+                'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+                '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>')
+        sun = ('<svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" '
+               'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+               '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41'
+               'M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>')
+        return (f'<button type="button" id="theme-toggle" class="theme-toggle" '
+                f'title="Switch to dark mode" aria-label="Switch to dark mode" '
+                f'onclick="toggleReportTheme()">{moon}{sun}</button>')
+
+    @classmethod
+    def _theme_script_html(cls):
+        return (
+            '<script>(function(){'
+            f'var PLOT_THEMES={json.dumps(cls.PLOT_THEMES)};'
+            'function applyTheme(mode){'
+            'document.documentElement.setAttribute("data-theme",mode);'
+            'var next=mode==="dark"?"light":"dark";'
+            'var btn=document.getElementById("theme-toggle");'
+            'if(btn){btn.title="Switch to "+next+" mode";btn.setAttribute("aria-label",btn.title);}'
+            'if(window.Plotly){document.querySelectorAll(".js-plotly-plot").forEach(function(el){'
+            'window.Plotly.relayout(el,PLOT_THEMES[mode]);});}'
+            '}'
+            'window.toggleReportTheme=function(){'
+            'applyTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark");};'
+            '})();</script>'
+        )
 
     # --------------------------------------------------------------- main HTML
 
@@ -998,7 +1090,7 @@ tbody tr:hover td{background:rgba(99,102,241,.04)}
 
         head = (
             f'<!DOCTYPE html>\n'
-            f'<html lang="en">\n'
+            f'<html lang="en" data-theme="{self.DEFAULT_THEME}">\n'
             f'<head>\n'
             f'<title>Test Report \u2014 {tester_name}</title>\n'
             f'<meta charset="utf-8">\n'
@@ -1025,6 +1117,7 @@ tbody tr:hover td{background:rgba(99,102,241,.04)}
             f'<div class="meta-item"><strong>Framework</strong>{fw_ver}</div>'
             f'<div class="meta-item"><strong>Tester</strong>{tester_ver}</div>'
             f'<div class="meta-item"><strong>Generated</strong>{generated}</div>'
+            f'{self._theme_toggle_html()}'
             f'</div>'
             f'</div></div>\n'
 
@@ -1090,6 +1183,7 @@ tbody tr:hover td{background:rgba(99,102,241,.04)}
             f'</div>\n'
 
             f'</div>\n'  # end .container
+            f'{self._theme_script_html()}\n'
             f'</body>\n'
             f'</html>'
         )

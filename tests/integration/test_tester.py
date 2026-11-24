@@ -43,6 +43,26 @@ def test_tester_state_includes_station_ui_theme(make_tester):
     assert t.state["tester"]["ui_theme"] == "light"
 
 
+def test_company_branding_is_exposed_in_state_and_logo_endpoint(make_tester, tmp_path):
+    logo = tmp_path / "logo.png"
+    logo.write_bytes(b"\x89PNG\r\n\x1a\nfake")
+    t = make_tester(company_name="Acme Corp", company_logo=str(logo))
+
+    assert t.state["tester"]["company_name"] == "Acme Corp"
+    assert t.state["tester"]["company_logo"] is True
+    response = t.interface.app.test_client().get("/company_logo")
+    assert response.status_code == 200
+    assert response.data == logo.read_bytes()
+
+
+def test_company_logo_endpoint_returns_404_when_not_configured(make_tester):
+    t = make_tester()
+
+    assert t.state["tester"]["company_name"] is None
+    assert t.state["tester"]["company_logo"] is False
+    assert t.interface.app.test_client().get("/company_logo").status_code == 404
+
+
 def test_select_program_sets_active_program(make_tester):
     t = make_tester()
     assert t.active_program is not None
