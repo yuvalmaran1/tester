@@ -27,7 +27,7 @@ class RunExecutorMixin:
     """Mixin providing test run execution for Tester.
 
     Expects the host class to supply the following attributes on self:
-    db, active_test, abort_run, running, test_run, active_program,
+    db, active_test, abort_run, failure_stop, running, test_run, active_program,
     active_dut, dut_setup, dut_cleanup, logger, attachment, run_attr,
     state, original_skip_states, interface, test_stats.
     """
@@ -57,6 +57,20 @@ class RunExecutorMixin:
             test_case.result.comment = str(exc)
             test_case.result.result = TestResult.TestEval.ERROR
             self.logger.error(f"Test '{test_case.config.name}' escaped execution protection: {exc}")
+        self._check_abort_on_failure(test_case)
+
+    def _check_abort_on_failure(self, test_case: TestCase):
+        """Stop the run (cleanups still execute) when an ``abortonfailure`` test fails or errors."""
+        if (test_case.config.abortonfailure and self.failure_stop is None
+                and test_case.result.result in (TestResult.TestEval.FAIL, TestResult.TestEval.ERROR)):
+            self.failure_stop = test_case.config.name
+            self.logger.warning(f"Test '{test_case.config.name}' {test_case.result.result.name} "
+                                f"with abortonfailure set — skipping remaining tests")
+
+    def _skip_after_failure_stop(self, test_case: TestCase):
+        test_case.skip()
+        if self.failure_stop is not None and not test_case.config.skip:
+            test_case.result.comment = f"Run stopped after '{self.failure_stop}' failed"
 
     def _execute_testsuite(self, ts: TestSuite, run_id, skip_suite: bool = False):
         skip_testcases = False
@@ -64,7 +78,7 @@ class RunExecutorMixin:
         if ts.setup:
             self._update_status(f"Executing Test Case '{ts.setup.config.name}'")
             if skip_suite or ts.setup.config.skip:
-                ts.setup.skip()
+                self._skip_after_failure_stop(ts.setup)
                 # Add comment if skipped due to user modification
                 if hasattr(self, 'original_skip_states'):
                     test_id = f"{ts.name}_setup"
@@ -86,11 +100,11 @@ class RunExecutorMixin:
             self.logger.info(f"Test '{ts.setup.config.name}' complete. Result: {ts.setup.result.result.name}")
 
         for tc in ts.testcases:
-            if self.abort_run:
+            if self.abort_run or self.failure_stop is not None:
                 skip_testcases = True
             if skip_testcases or skip_suite or tc.config.skip:
                 self._update_status(f"Skipping Test Case '{tc.config.name}'")
-                tc.skip()
+                self._skip_after_failure_stop(tc)
                 # Add comment if skipped due to user modification
                 if hasattr(self, 'original_skip_states'):
                     test_id = f"{ts.name}_{tc.config.name}"
@@ -114,7 +128,7 @@ class RunExecutorMixin:
         if ts.cleanup:
             self._update_status(f"Executing Test Case '{ts.cleanup.config.name}'")
             if skip_suite or ts.cleanup.config.skip:
-                ts.cleanup.skip()
+                self._skip_after_failure_stop(ts.cleanup)
                 # Add comment if skipped due to user modification
                 if hasattr(self, 'original_skip_states'):
                     test_id = f"{ts.name}_cleanup"
@@ -144,6 +158,7 @@ class RunExecutorMixin:
 
         self.running = True
         self.abort_run = False
+        self.failure_stop = None
 
         self.run_thread = Thread(target=self._run)
         self.run_thread.start()
@@ -245,7 +260,7 @@ class RunExecutorMixin:
             self.active_test += 1
             self.logger.info(f"Test '{self.dut_setup.config.name}' complete. Result: {self.dut_setup.result.result.name}")
         for ts in self.active_program.testsuites:
-            if self.abort_run:
+            if self.abort_run or self.failure_stop is not None:
                 skip_all = True
             self._execute_testsuite(ts, run_id, skip_all)
 

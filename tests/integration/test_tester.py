@@ -233,6 +233,59 @@ def test_suite_cleanup_runs_after_setup_fail(make_tester):
     assert cleanup.result != E.UNKNOWN
 
 
+# ── abortonfailure ────────────────────────────────────────────────────────────
+
+def _duts_abort_on_failure(failing_test, abortonfailure=True):
+    tc = lambda name, test, **kw: {"name": name, "module": "fixtures.fast_tests",
+                                    "test": test, "tolerance": {}, **kw}
+    return {
+        "duts": [{
+            "name": "Test DUT", "description": "DUT", "image": "", "product_id": "x", "attr": {},
+            "module": "fixtures.fast_tests", "setup": "FastSetupTest", "cleanup": "FastCleanupTest",
+            "programs": [{"name": "Test Program", "description": "", "attr": {},
+                          "default_serial_number": "TEST-SN", "testsuites": ["SuiteA", "SuiteB"]}],
+            "testsuites": [
+                {"name": "SuiteA", "module": "fixtures.fast_tests",
+                 "setup": "FastSetupTest", "cleanup": "FastCleanupTest",
+                 "testcases": [tc("A1", "FastPassTest"),
+                               tc("A2", failing_test, abortonfailure=abortonfailure),
+                               tc("A3", "FastPassTest")]},
+                {"name": "SuiteB", "module": "fixtures.fast_tests",
+                 "setup": "FastSetupTest", "cleanup": "FastCleanupTest",
+                 "testcases": [tc("B1", "FastPassTest")]},
+            ],
+        }]
+    }
+
+
+def _result(tester, name, suite):
+    return next(r for r in tester.test_run.test_results if r.name == name and r.suite == suite)
+
+
+@pytest.mark.parametrize("failing_test, expected", [("FastFailTest", E.FAIL), ("FastErrorTest", E.ERROR)])
+def test_abortonfailure_stops_run_but_runs_cleanups(make_tester, failing_test, expected):
+    t = make_tester(_duts_abort_on_failure(failing_test))
+    _run_and_wait(t)
+
+    assert _result(t, "A2", "SuiteA").result == expected
+    a3 = _result(t, "A3", "SuiteA")
+    assert a3.result == E.SKIPPED
+    assert a3.comment == "Run stopped after 'A2' failed"
+    assert _result(t, "Setup", "SuiteB").result == E.SKIPPED
+    assert _result(t, "B1", "SuiteB").result == E.SKIPPED
+    assert _result(t, "Cleanup", "SuiteA").result == E.PASS
+    assert _result(t, "Cleanup", "").result == E.PASS
+    assert t.test_run.result == expected
+
+
+def test_failure_without_abortonfailure_continues_run(make_tester):
+    t = make_tester(_duts_abort_on_failure("FastFailTest", abortonfailure=False))
+    _run_and_wait(t)
+
+    assert _result(t, "A3", "SuiteA").result == E.PASS
+    assert _result(t, "B1", "SuiteB").result == E.PASS
+
+
 # ── Attribute hierarchy ───────────────────────────────────────────────────────
 
 def test_attr_program_wins_over_dut(make_tester):

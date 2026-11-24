@@ -58,6 +58,7 @@ class Tester(RunExecutorMixin, StateManagerMixin, ABC):
         self._reset_stats()
         self.active_test = -1
         self.abort_run = False
+        self.failure_stop = None  # name of the abortonfailure test that stopped the current run
         self.serial_number = ''
         self.run_thread = None
         self.current_operator = None  # dict with id/username/display_name/role or None
