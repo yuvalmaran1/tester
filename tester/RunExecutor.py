@@ -160,7 +160,7 @@ class RunExecutorMixin:
         self.abort_run = False
         self.failure_stop = None
 
-        self.run_thread = Thread(target=self._run)
+        self.run_thread = Thread(target=self._run, daemon=True)
         self.run_thread.start()
 
     def _get_run_thread_id(self) -> int:

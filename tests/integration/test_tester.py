@@ -87,6 +87,19 @@ def test_run_raises_when_already_running(make_tester):
         t.wait_for_test_end()
 
 
+def test_run_worker_does_not_keep_process_alive(make_tester, monkeypatch):
+    t = make_tester()
+    release_worker = threading.Event()
+    monkeypatch.setattr(t, "_run", release_worker.wait)
+
+    try:
+        t.run()
+        assert t.run_thread.daemon is True
+    finally:
+        release_worker.set()
+        t.run_thread.join()
+
+
 # ── Full run lifecycle ────────────────────────────────────────────────────────
 
 def test_full_run_completes(make_tester):

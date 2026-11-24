@@ -26,7 +26,9 @@ class StateManagerMixin:
     def _timer_update(self):
         if self.running:
             self._update_tester()
-            threading.Timer(0.5, self._timer_update).start()
+            timer = threading.Timer(0.5, self._timer_update)
+            timer.daemon = True
+            timer.start()
 
     def _update_status(self, status: str):
         self.status_str = status
