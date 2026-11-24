@@ -240,3 +240,5 @@ class CriticalPowerTest(PassFailTestCase):
 This marks the current test as ABORTED and skips all remaining tests. The run result will be ABORTED.
 
 The operator can also click **Stop** in the UI at any time, which injects `AbortRunException` into the running thread.
+
+To stop the run whenever a specific test fails — without writing code — set `"abortonfailure": true` on it in `duts.json` (see the user guide, *Stop the run on failure*).

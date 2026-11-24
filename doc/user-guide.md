@@ -263,6 +263,7 @@ class PowerOffCleanup(PassFailTestCase):
               "tolerance": { "min": 3.2, "max": 3.4 },
               "unit":      "V",
               "infoonly":  false,   // true → result is always INFOONLY, never PASS/FAIL
+              "abortonfailure": false, // true → a FAIL/ERROR stops the run (cleanups still run)
               "skip":      false,   // true → skipped by default
               "attr":      {}       // test-level attr override
             }
@@ -415,6 +416,16 @@ When a setup test case fails:
 
 When the DUT-level setup fails:
 - Every test suite and all its tests are skipped.
+
+### Stop the run on failure (`abortonfailure`)
+
+Set `"abortonfailure": true` on a test case to stop the run when that test results in FAIL or ERROR (e.g. an over-current check that indicates a short). It is configured in `duts.json` only (not editable in the UI) and applies to test cases, not to setup/cleanup steps.
+
+- All remaining test cases and suites are skipped, with the comment `Run stopped after '<test>' failed`.
+- The current suite's cleanup and the DUT-level cleanup still run, so hardware can be powered down safely.
+- The run result is the failing test's result (FAIL or ERROR) — not ABORTED, which is reserved for the Stop button and `AbortRunException`.
+
+See the "Idle Current" test in `example_tester/duts.json`.
 
 ---
 

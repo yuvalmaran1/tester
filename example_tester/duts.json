@@ -90,6 +90,9 @@
                             "module": "tests.power_tests",
                             "test": "CurrentDrawTest",
                             "unit": "mA",
+                            // Abnormal idle current suggests a short — stop the run
+                            // (suite/DUT cleanup still runs to power the board down).
+                            "abortonfailure": true,
                             "tolerance": {
                                 "min": 30.0,
                                 "max": 70.0
