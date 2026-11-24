@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 
 # Release builds set TESTER_VERSION from the git tag (see .github/workflows/release.yml)
-VERSION = os.environ.get('TESTER_VERSION', '1.0.0')
+VERSION = os.environ.get('TESTER_VERSION', '1.0.1')
 DESCRIPTION = 'Product Tester Framework'
 LONG_DESCRIPTION = 'Test Framework for HiL Testing'
 
